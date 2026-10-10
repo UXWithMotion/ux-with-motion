@@ -271,12 +271,7 @@ export function ProfileClient({ user, isPremium, subscription }: { user: any; is
                       </button>
                     )
                   ) : (
-                    <button 
-                      onClick={() => router.push('/pricing')}
-                      className="w-full h-[48px] bg-[#1F2123] rounded-[40px] font-sans font-medium text-[16px] text-white mb-[32px] hover:bg-black transition-colors"
-                    >
-                      Upgrade to Premium
-                    </button>
+                    null /* Upgrade button temporarily disabled */
                   )}
                   
                   <div className="flex flex-col gap-[16px] w-full">

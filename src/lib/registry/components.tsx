@@ -17,6 +17,11 @@ import InteractiveFace from "@/components/motion-components/InteractiveFace";
 import { DownloadButton } from "@/components/motion-components/buttons/DownloadButton";
 import { TabsButton } from "@/components/motion-components/buttons/TabsButton";
 import { FourItemTabs } from "@/components/motion-components/buttons/FourItemTabs";
+import { MotionToggle } from "@/components/motion-components/buttons/MotionToggle";
+import { SwipeArrowButton } from "@/components/motion-components/buttons/SwipeArrowButton";
+import { ExpandableSearch } from "@/components/motion-components/inputs/ExpandableSearch";
+import { NeoDeleteButtonShowcase } from "@/components/motion-components/buttons/NeoDeleteButton";
+import { ViewMoreEyeButton } from "@/components/motion-components/buttons/ViewMoreEyeButton";
 import { ServicesIndicatorButton } from "@/components/motion-components/buttons/ServicesIndicatorButton";
 
 export type ComponentRegistrySnippets = {
@@ -36,6 +41,61 @@ export type ComponentRegistryEntry = {
 };
 
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "view-more-eye-button": {
+    registryId: "view-more-eye-button",
+    name: "View More Eye Button",
+    category: "Buttons",
+    component: ViewMoreEyeButton,
+    snippets: {
+      html: `<button class="view-more-eye">View more</button>`,
+      css: `.view-more-eye { /* styles */ }`,
+      react: `// React code for ViewMoreEyeButton`
+    }
+  },
+  "neo-delete-button": {
+    registryId: "neo-delete-button",
+    name: "Neo Delete Button",
+    category: "Buttons",
+    component: NeoDeleteButtonShowcase,
+    snippets: {
+      html: `<button class="neo-delete">Delete</button>`,
+      css: `.neo-delete { /* styles */ }`,
+      react: `// React code for NeoDeleteButton`
+    }
+  },
+  "expandable-search": {
+    registryId: "expandable-search",
+    name: "Expandable Search",
+    category: "Inputs",
+    component: ExpandableSearch,
+    snippets: {
+      html: `<div class="expandable-search"></div>`,
+      css: `.expandable-search { /* styles */ }`,
+      react: `// React code for ExpandableSearch`
+    }
+  },
+  "swipe-arrow-button": {
+    registryId: "swipe-arrow-button",
+    name: "Swipe Arrow Button",
+    category: "Buttons",
+    component: SwipeArrowButton,
+    snippets: {
+      html: `<button class="swipe-arrow-btn">Continue</button>`,
+      css: `.swipe-arrow-btn { /* styles */ }`,
+      react: `// React code for SwipeArrowButton`
+    }
+  },
+  "motion-toggle": {
+    registryId: "motion-toggle",
+    name: "Motion Toggle",
+    category: "Buttons",
+    component: MotionToggle,
+    snippets: {
+      html: `<button class="motion-toggle"></button>`,
+      css: `.motion-toggle { /* styles */ }`,
+      react: `// React code for MotionToggle`
+    }
+  },
   "four-item-tabs": {
     registryId: "four-item-tabs",
     name: "Four Item Tabs",

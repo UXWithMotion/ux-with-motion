@@ -88,7 +88,7 @@ export function Navbar({
       {/* Desktop & Tablet Navigation */}
       <div className="hidden md:flex items-center justify-between w-full px-6 lg:px-[70px] py-[7px] min-h-[65px]">
         {/* Left: Brand Logo & Navigation Link */}
-        <div className="flex items-center gap-[29px] shrink-0">
+        <div className="flex-1 flex items-center justify-start gap-[29px] min-w-0">
           <Link
             href="/"
             className="flex items-center hover:opacity-90 transition-opacity"
@@ -203,13 +203,8 @@ export function Navbar({
         </div>
 
         {/* Right: Pricing & CTA / Account */}
-        <div className="flex items-center gap-[32px] shrink-0">
-          <Link
-            href="/pricing"
-            className="font-sans font-medium text-[16px] text-black hover:text-[#7D7F82] transition-colors leading-[1.2] whitespace-nowrap"
-          >
-            Pricing
-          </Link>
+        <div className="flex-1 flex items-center justify-end gap-[32px] min-w-0">
+          {/* Pricing link temporarily disabled */}
 
           {variant === "logged-out" ? (
             <Button
@@ -420,13 +415,7 @@ export function Navbar({
               >
                 Components
               </Link>
-              <Link
-                href="/pricing"
-                onClick={() => setMobileMenuOpen(false)}
-                className="font-sans font-medium text-[18px] text-black hover:text-[#7D7F82] py-2 border-b border-[#F7F9FB]"
-              >
-                Pricing
-              </Link>
+              {/* Mobile Pricing link temporarily disabled */}
               <div className="pt-2">
                 {variant === "logged-out" && (
                   <Button

@@ -57,34 +57,9 @@ export async function getPublishedComponents() {
 
   // Task 5: Secure Data Boundary - scrub protected fields for Premium components if user is not Premium
   const scrubbedData = data.map(comp => {
-    // If the component doesn't have an access tier yet due to missing DB migration, default to 'free'
-    const tier = comp.access_tier || 'free';
-    
-    // Explicit initial tier assignments for the 9 trusted components without DB migration
-    // Free components: 'continue-button', 'generate-button', 'accept-button'
-    // The rest are Premium.
-    let effectiveTier = tier;
-    if (['continue-button', 'generate-button', 'accept-button'].includes(comp.registry_id)) {
-      effectiveTier = 'free';
-    } else if (['get-access-button', 'mail-button', 'delete-button', 'download-button', 'tabs-button', 'services-indicator-button'].includes(comp.registry_id)) {
-      effectiveTier = 'premium';
-    }
-
-    comp.access_tier = effectiveTier;
-
-    if (effectiveTier === 'premium' && !isPremium) {
-      return {
-        ...comp,
-        snippets: null, // Protected source code
-        schema_definition: [], // Protected customization metadata
-        is_locked: true, // Explicit flag for the UI
-      };
-    }
-
-    return {
-      ...comp,
-      is_locked: false,
-    };
+    // TEMPORARILY: Make all components free
+    comp.access_tier = 'free';
+    return comp;
   });
 
   return scrubbedData;

@@ -9,7 +9,7 @@ export interface FooterLinkItem {
 
 const FEATURE_LINKS: FooterLinkItem[] = [
   { label: "Components", href: "/components" },
-  { label: "Pricing", href: "/pricing" },
+  // { label: "Pricing", href: "/pricing" },
   { label: "Contact us", href: "/contact" },
 ];
 
@@ -51,11 +51,7 @@ export function Footer() {
                       Components
                     </Link>
                   </li>
-                  <li>
-                    <Link href="/pricing" className="hover:text-[#7D7F82] transition-colors leading-[1.2]">
-                      Pricing
-                    </Link>
-                  </li>
+                  {/* Pricing link temporarily disabled */}
                   <li>
                     <Link href="/contact" className="hover:text-[#7D7F82] transition-colors leading-[1.2]">
                       Contact us
