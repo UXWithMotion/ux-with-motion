@@ -23,6 +23,8 @@ import { ExpandableSearch } from "@/components/motion-components/inputs/Expandab
 import { NeoDeleteButtonShowcase } from "@/components/motion-components/buttons/NeoDeleteButton";
 import { ViewMoreEyeButton } from "@/components/motion-components/buttons/ViewMoreEyeButton";
 import { ServicesIndicatorButton } from "@/components/motion-components/buttons/ServicesIndicatorButton";
+import { LiveSession } from "@/components/motion-components/LiveSession";
+import { LiveSessionInvite } from "@/components/motion-components/LiveSessionInvite";
 
 export type ComponentRegistrySnippets = {
   html: string;
@@ -41,6 +43,28 @@ export type ComponentRegistryEntry = {
 };
 
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "live-session-invite": {
+    registryId: "live-session-invite",
+    name: "Live Session Invite",
+    category: "Widgets",
+    component: LiveSessionInvite,
+    snippets: {
+      html: `<div class="live-session-invite"></div>`,
+      css: `.live-session-invite { /* styles */ }`,
+      react: `// React code for LiveSessionInvite`
+    }
+  },
+  "live-session": {
+    registryId: "live-session",
+    name: "Live Session",
+    category: "Widgets",
+    component: LiveSession,
+    snippets: {
+      html: `<div class="live-session"></div>`,
+      css: `.live-session { /* styles */ }`,
+      react: `// React code for LiveSession`
+    }
+  },
   "view-more-eye-button": {
     registryId: "view-more-eye-button",
     name: "View More Eye Button",
