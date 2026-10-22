@@ -1,17 +1,34 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
-import { Camera, Trash2, Check, Heart, Star, Send, ArrowRight } from "lucide-react";
-import { ComponentCard } from "@/components/ui/ComponentCard";
+import { Camera, Trash2, Check, Bookmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { useRouter } from "next/navigation";
+import { ComponentModalPublic, ComponentItem } from "@/components/ui/ComponentModalPublic";
+import { componentRegistry } from "@/lib/registry/components";
+import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
+import { useCustomization } from "@/components/providers/CustomizationProvider";
+import { getPublishedComponents } from "@/lib/admin/components/queries";
 
-export function ProfileClient({ user, isPremium, subscription }: { user: any; isPremium?: boolean; subscription?: any }) {
+export function ProfileClient({ 
+  user, 
+  isPremium, 
+  subscription,
+  initialComponents = [],
+}: { 
+  user: any; 
+  isPremium?: boolean; 
+  subscription?: any;
+  initialComponents?: ComponentItem[];
+}) {
   const supabase = createClient();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { getOverrides } = useCustomization();
 
+  const [components, setComponents] = useState<ComponentItem[]>(initialComponents);
+  const [activeModalComponent, setActiveModalComponent] = useState<ComponentItem | null>(null);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   
   useEffect(() => {
@@ -29,6 +46,62 @@ export function ProfileClient({ user, isPremium, subscription }: { user: any; is
       window.removeEventListener("saved_components_changed", handleStorageChange);
     };
   }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const published = await getPublishedComponents();
+        if (published) setComponents(published);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    if (!initialComponents || initialComponents.length === 0) {
+      load();
+    }
+  }, [initialComponents]);
+
+  const savedComponents = useMemo(() => {
+    const matched: ComponentItem[] = [];
+    const matchedIds = new Set<string>();
+
+    // 1. Match from published database components (by comp.id or comp.registry_id)
+    components.forEach((comp) => {
+      if (savedIds.includes(comp.id) || savedIds.includes(comp.registry_id)) {
+        matched.push(comp);
+        matchedIds.add(comp.id);
+        matchedIds.add(comp.registry_id);
+      }
+    });
+
+    // 2. Fallback: match from componentRegistry if not already matched
+    savedIds.forEach((id) => {
+      if (!matchedIds.has(id) && componentRegistry[id]) {
+        const entry = componentRegistry[id];
+        matched.push({
+          id: id,
+          title: entry.name,
+          registry_id: entry.registryId,
+          status: "published",
+          tags: [entry.category],
+          snippets: entry.snippets,
+          source_type: "react",
+          schema_definition: entry.schema_definition,
+        });
+        matchedIds.add(id);
+      }
+    });
+
+    return matched;
+  }, [components, savedIds]);
+
+  const toggleSave = (e: React.MouseEvent, comp: ComponentItem) => {
+    e.stopPropagation();
+    const newSaved = savedIds.filter((id) => id !== comp.id && id !== comp.registry_id);
+    localStorage.setItem("saved_components", JSON.stringify(newSaved));
+    setSavedIds(newSaved);
+    window.dispatchEvent(new Event("saved_components_changed"));
+  };
 
   const fullName = user.user_metadata?.full_name || user.user_metadata?.name || "User";
   const [initialFirstName, ...initialLastNames] = fullName.split(" ");
@@ -205,216 +278,238 @@ export function ProfileClient({ user, isPremium, subscription }: { user: any; is
               </div>
             </div>
 
-            {/* Plan Comparison Section */}
-            <div className="bg-[#FBFCFD] border border-[#DEE1E4] rounded-[32px] p-[32px] flex flex-col gap-[32px]">
-              <div>
-                <h3 className="font-sans font-bold text-[24px] text-[#454545] mb-2">Current Subscription</h3>
-                <p className="font-inter text-[14px] text-[#7D7F82]">Manage your billing and plan details.</p>
-              </div>
-              
-              <div className="flex flex-col md:flex-row gap-[24px]">
-                {/* Free Plan Card */}
-                <div className="flex-1 border border-[#DEE1E4] rounded-[24px] p-[24px] flex flex-col items-start relative overflow-hidden bg-[#FBFCFD]">
-                  <h4 className="font-sans font-bold text-[20px] text-[#454545] mb-2">Free Plan</h4>
-                  <div className="font-sans font-bold text-[32px] text-[#454545] mb-[24px]">
-                    ₹0<span className="text-[16px] text-[#7D7F82] font-medium">/month</span>
-                  </div>
-                  
-                  {isPremium ? (
-                    <button className="w-full h-[48px] border border-[#DEE1E4] rounded-[40px] font-sans font-medium text-[16px] text-[#898B8E] mb-[32px] cursor-default bg-[#F7F9FB]">
-                      Included
-                    </button>
-                  ) : (
-                    <button className="w-full h-[48px] border border-[#DEE1E4] rounded-[40px] font-sans font-medium text-[16px] text-[#898B8E] mb-[32px] cursor-default">
-                      Current Plan
-                    </button>
-                  )}
-                  
-                  <div className="flex flex-col gap-[16px] w-full">
-                    <div className="flex items-center gap-[12px]">
-                      <div className="size-[24px] rounded-full bg-[#DB7100]/10 flex items-center justify-center shrink-0">
-                        <Check size={14} className="text-[#DB7100]" strokeWidth={3} />
-                      </div>
-                      <span className="font-inter text-[14px] text-[#454545]">Access to free components</span>
-                    </div>
-                    <div className="flex items-center gap-[12px]">
-                      <div className="size-[24px] rounded-full bg-[#DB7100]/10 flex items-center justify-center shrink-0">
-                        <Check size={14} className="text-[#DB7100]" strokeWidth={3} />
-                      </div>
-                      <span className="font-inter text-[14px] text-[#454545]">Basic customization</span>
-                    </div>
-                  </div>
+            {/* Plan Comparison Section (Hidden temporarily as all components are currently free) */}
+            {false && (
+              <div className="bg-[#FBFCFD] border border-[#DEE1E4] rounded-[32px] p-[32px] flex flex-col gap-[32px]">
+                <div>
+                  <h3 className="font-sans font-bold text-[24px] text-[#454545] mb-2">Current Subscription</h3>
+                  <p className="font-inter text-[14px] text-[#7D7F82]">Manage your billing and plan details.</p>
                 </div>
-
-                {/* Premium Plan Card */}
-                <div className="flex-1 border border-[#1F2123] rounded-[24px] p-[24px] flex flex-col items-start relative overflow-hidden bg-[#FBFCFD]">
-                  <div className="absolute top-[24px] right-[24px] bg-[#1F2123] text-white font-sans font-medium text-[10px] uppercase tracking-wider px-[12px] py-[6px] rounded-[100px]">
-                    RECOMMENDED
-                  </div>
-                  <h4 className="font-sans font-bold text-[20px] text-[#454545] mb-2">Premium Plan {subscription?.plan_key === 'yearly' ? '(Yearly)' : '(Monthly)'}</h4>
-                  <div className="font-sans font-bold text-[32px] text-[#454545] mb-[24px]">
-                    {subscription?.plan_key === 'yearly' ? '₹2,999' : '₹399'}<span className="text-[16px] text-[#7D7F82] font-medium">/{subscription?.plan_key === 'yearly' ? 'year' : 'month'}</span>
-                  </div>
-                  
-                  {isPremium ? (
-                    subscription?.cancel_at_period_end ? (
-                      <div className="w-full h-[48px] border border-[#DEE1E4] rounded-[40px] flex items-center justify-center font-sans font-medium text-[16px] text-[#7D7F82] mb-[32px] bg-[#F7F9FB]">
-                        Cancellation Scheduled
-                      </div>
-                    ) : (
-                      <button
-                        onClick={handleCancelSubscription}
-                        disabled={isCanceling}
-                        className="w-full h-[48px] border border-[#FF3B30] text-[#FF3B30] rounded-[40px] font-sans font-medium text-[16px] mb-[32px] hover:bg-[#FF3B30]/10 transition-colors"
-                      >
-                        {isCanceling ? 'Canceling...' : 'Cancel Subscription'}
+                
+                <div className="flex flex-col md:flex-row gap-[24px]">
+                  {/* Free Plan Card */}
+                  <div className="flex-1 border border-[#DEE1E4] rounded-[24px] p-[24px] flex flex-col items-start relative overflow-hidden bg-[#FBFCFD]">
+                    <h4 className="font-sans font-bold text-[20px] text-[#454545] mb-2">Free Plan</h4>
+                    <div className="font-sans font-bold text-[32px] text-[#454545] mb-[24px]">
+                      ₹0<span className="text-[16px] text-[#7D7F82] font-medium">/month</span>
+                    </div>
+                    
+                    {isPremium ? (
+                      <button className="w-full h-[48px] border border-[#DEE1E4] rounded-[40px] font-sans font-medium text-[16px] text-[#898B8E] mb-[32px] cursor-default bg-[#F7F9FB]">
+                        Included
                       </button>
-                    )
-                  ) : (
-                    null /* Upgrade button temporarily disabled */
-                  )}
-                  
-                  <div className="flex flex-col gap-[16px] w-full">
-                    <div className="flex items-center gap-[12px]">
-                      <div className="size-[24px] rounded-full bg-[#DB7100]/10 flex items-center justify-center shrink-0">
-                        <Check size={14} className="text-[#DB7100]" strokeWidth={3} />
+                    ) : (
+                      <button className="w-full h-[48px] border border-[#DEE1E4] rounded-[40px] font-sans font-medium text-[16px] text-[#898B8E] mb-[32px] cursor-default">
+                        Current Plan
+                      </button>
+                    )}
+                    
+                    <div className="flex flex-col gap-[16px] w-full">
+                      <div className="flex items-center gap-[12px]">
+                        <div className="size-[24px] rounded-full bg-[#DB7100]/10 flex items-center justify-center shrink-0">
+                          <Check size={14} className="text-[#DB7100]" strokeWidth={3} />
+                        </div>
+                        <span className="font-inter text-[14px] text-[#454545]">Access to free components</span>
                       </div>
-                      <span className="font-inter text-[14px] text-[#454545]">Everything in free</span>
+                      <div className="flex items-center gap-[12px]">
+                        <div className="size-[24px] rounded-full bg-[#DB7100]/10 flex items-center justify-center shrink-0">
+                          <Check size={14} className="text-[#DB7100]" strokeWidth={3} />
+                        </div>
+                        <span className="font-inter text-[14px] text-[#454545]">Basic customization</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-[12px]">
-                      <div className="size-[24px] rounded-full bg-[#DB7100]/10 flex items-center justify-center shrink-0">
-                        <Check size={14} className="text-[#DB7100]" strokeWidth={3} />
-                      </div>
-                      <span className="font-inter text-[14px] text-[#454545]">Premium motion components</span>
+                  </div>
+
+                  {/* Premium Plan Card */}
+                  <div className="flex-1 border border-[#1F2123] rounded-[24px] p-[24px] flex flex-col items-start relative overflow-hidden bg-[#FBFCFD]">
+                    <div className="absolute top-[24px] right-[24px] bg-[#1F2123] text-white font-sans font-medium text-[10px] uppercase tracking-wider px-[12px] py-[6px] rounded-[100px]">
+                      RECOMMENDED
                     </div>
-                    <div className="flex items-center gap-[12px]">
-                      <div className="size-[24px] rounded-full bg-[#DB7100]/10 flex items-center justify-center shrink-0">
-                        <Check size={14} className="text-[#DB7100]" strokeWidth={3} />
+                    <h4 className="font-sans font-bold text-[20px] text-[#454545] mb-2">Premium Plan {subscription?.plan_key === 'yearly' ? '(Yearly)' : '(Monthly)'}</h4>
+                    <div className="font-sans font-bold text-[32px] text-[#454545] mb-[24px]">
+                      {subscription?.plan_key === 'yearly' ? '₹2,999' : '₹399'}<span className="text-[16px] text-[#7D7F82] font-medium">/{subscription?.plan_key === 'yearly' ? 'year' : 'month'}</span>
+                    </div>
+                    
+                    {isPremium ? (
+                      subscription?.cancel_at_period_end ? (
+                        <div className="w-full h-[48px] border border-[#DEE1E4] rounded-[40px] flex items-center justify-center font-sans font-medium text-[16px] text-[#7D7F82] mb-[32px] bg-[#F7F9FB]">
+                          Cancellation Scheduled
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleCancelSubscription}
+                          disabled={isCanceling}
+                          className="w-full h-[48px] border border-[#FF3B30] text-[#FF3B30] rounded-[40px] font-sans font-medium text-[16px] mb-[32px] hover:bg-[#FF3B30]/10 transition-colors"
+                        >
+                          {isCanceling ? 'Canceling...' : 'Cancel Subscription'}
+                        </button>
+                      )
+                    ) : (
+                      null /* Upgrade button temporarily disabled */
+                    )}
+                    
+                    <div className="flex flex-col gap-[16px] w-full">
+                      <div className="flex items-center gap-[12px]">
+                        <div className="size-[24px] rounded-full bg-[#DB7100]/10 flex items-center justify-center shrink-0">
+                          <Check size={14} className="text-[#DB7100]" strokeWidth={3} />
+                        </div>
+                        <span className="font-inter text-[14px] text-[#454545]">Everything in free</span>
                       </div>
-                      <span className="font-inter text-[14px] text-[#454545]">Advanced customizations</span>
+                      <div className="flex items-center gap-[12px]">
+                        <div className="size-[24px] rounded-full bg-[#DB7100]/10 flex items-center justify-center shrink-0">
+                          <Check size={14} className="text-[#DB7100]" strokeWidth={3} />
+                        </div>
+                        <span className="font-inter text-[14px] text-[#454545]">Premium motion components</span>
+                      </div>
+                      <div className="flex items-center gap-[12px]">
+                        <div className="size-[24px] rounded-full bg-[#DB7100]/10 flex items-center justify-center shrink-0">
+                          <Check size={14} className="text-[#DB7100]" strokeWidth={3} />
+                        </div>
+                        <span className="font-inter text-[14px] text-[#454545]">Advanced customizations</span>
+                      </div>
                     </div>
                   </div>
                 </div>
+                
+                <p className="font-inter text-[14px] text-[#7D7F82] mt-[-8px]">
+                  {isPremium ? (
+                    subscription?.cancel_at_period_end
+                      ? `Premium remains active until ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'the end of your billing cycle'}.`
+                      : "Your premium plan will automatically renew."
+                  ) : (
+                    "Your free plan is active."
+                  )}
+                </p>
               </div>
-              
-              <p className="font-inter text-[14px] text-[#7D7F82] mt-[-8px]">
-                {isPremium ? (
-                  subscription?.cancel_at_period_end
-                    ? `Premium remains active until ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'the end of your billing cycle'}.`
-                    : "Your premium plan will automatically renew."
-                ) : (
-                  "Your free plan is active."
-                )}
-              </p>
-            </div>
+            )}
 
             {/* Saved Components Section */}
             {savedIds.length > 0 && (
               <div className="bg-[#FBFCFD] border border-[#DEE1E4] rounded-[32px] p-[32px] flex flex-col gap-[32px]">
                 <div className="flex items-center justify-between">
                   <h3 className="font-sans font-bold text-[24px] text-[#454545]">
-                    Saved Components <span className="font-medium text-[#7D7F82] text-[18px]">({savedIds.length} items collected)</span>
+                    Saved Components{" "}
+                    <span className="font-medium text-[#7D7F82] text-[18px]">
+                      ({savedComponents.length} {savedComponents.length === 1 ? "item" : "items"} collected)
+                    </span>
                   </h3>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px]">
-                  {savedIds.includes("star-button") && (
-                    <ComponentCard id="star-button" title="Star button" tags={[{label: "React"}, {label: "Tailwind"}]}>
-                      {({ playState }) => (
-                        <button className={`bg-[#1F2123] px-[24px] py-[12px] rounded-[12px] flex items-center justify-center transition-all duration-300 shadow-[0_4px_14px_rgba(31,33,35,0.3)] ${playState === 'hover' ? 'scale-105 shadow-[0_6px_20px_rgba(31,33,35,0.4)]' : ''} ${playState === 'active' ? 'scale-95' : ''} hover:scale-105`}>
-                          <Star size={18} className={`transition-all duration-500 text-white ${playState === 'hover' || playState === 'loading' ? 'fill-white rotate-[144deg]' : ''}`} />
-                        </button>
-                      )}
-                    </ComponentCard>
-                  )}
-                  {savedIds.includes("icon-button") && (
-                    <ComponentCard id="icon-button" title="Icon button" tags={[{label: "React"}, {label: "Tailwind"}]}>
-                      {({ playState }) => (
-                        <button className={`relative overflow-hidden w-[160px] h-[52px] rounded-full flex items-center justify-start transition-all duration-300 ${playState === 'active' ? 'scale-95' : ''} hover:scale-105 bg-[#F5F9FF]`}>
-                          <span className={`pl-5 font-sans text-black`}>{playState === 'loading' ? 'Loading' : 'Continue'}</span>
-                          <div className={`absolute right-0 top-0 bottom-0 aspect-square rounded-full flex items-center justify-center shadow-md transition-all duration-300 ${playState === 'hover' ? 'scale-110 translate-x-1' : ''} ${playState === 'loading' ? 'animate-pulse' : ''} bg-[#1566E5] text-white`}>
-                            <ArrowRight size={18} />
+
+                {savedComponents.length === 0 ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center">
+                    <p className="font-sans text-[16px] text-[#7D7F82] mb-3">No saved components found.</p>
+                    <a
+                      href="/components"
+                      className="font-sans font-medium text-[14px] text-white bg-[#1F2123] rounded-full px-6 py-2.5 hover:bg-black transition-colors"
+                    >
+                      Explore Components
+                    </a>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px]">
+                    {savedComponents.map((comp) => {
+                      const overrides = getOverrides(comp.id);
+                      const activeOverrides: Record<string, string> = {};
+                      const schemaDefToUse =
+                        comp.schema_definition && comp.schema_definition.length > 0
+                          ? comp.schema_definition
+                          : componentRegistry[comp.registry_id]?.schema_definition || [];
+
+                      schemaDefToUse.forEach((config: any) => {
+                        const val = overrides[config.variable] !== undefined ? overrides[config.variable] : config.defaultValue;
+                        if (config.variable) {
+                          activeOverrides[config.variable] = val;
+                        }
+                      });
+
+                      const RegistryComponent = componentRegistry[comp.registry_id]?.component;
+
+                      return (
+                        <div
+                          key={comp.id}
+                          onClick={() => setActiveModalComponent(comp)}
+                          className="bg-[#F7F9FB] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip group cursor-pointer min-h-[251px]"
+                        >
+                          {/* Top action bar */}
+                          <div className="flex items-center justify-between p-[8px] w-full shrink-0 relative z-10 bg-transparent min-h-[50px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className="flex items-center">
+                              {(comp as any).access_tier === "premium" && (
+                                <div
+                                  className="flex items-center justify-center bg-[#FDF8F0] border border-[#F3E2C6] rounded-full px-2 py-0.5 shrink-0 ml-1"
+                                  title="Premium Component"
+                                >
+                                  <span className="text-[#C18824] text-[10px] font-bold uppercase tracking-wider">Premium</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex gap-[6px] items-center">
+                              <button
+                                onClick={(e) => toggleSave(e, comp)}
+                                className="flex items-center justify-center size-[34px] transition-colors text-[#454545] hover:text-[#CC0615]"
+                                aria-label="Remove from saved"
+                                title="Remove from saved"
+                              >
+                                <Bookmark size={20} className="fill-current stroke-current" />
+                              </button>
+                            </div>
                           </div>
-                        </button>
-                      )}
-                    </ComponentCard>
-                  )}
-                  {savedIds.includes("glow-button") && (
-                    <ComponentCard id="glow-button" title="Glow button" tags={[{label: "React"}, {label: "Tailwind"}]}>
-                      {({ playState }) => (
-                        <button className={`relative bg-[#F9F9F9] border px-[28px] py-[12px] rounded-full overflow-hidden flex items-center justify-center group transition-colors ${playState === 'hover' || playState === 'active' ? 'border-[#DEE1E4]' : 'border-[#DEE1E4]'}`}>
-                          <span className="font-sans font-medium text-[16px] text-[#454545] relative z-10">{playState === 'loading' ? 'Saving...' : 'Continue'}</span>
-                          <div className={`absolute right-[-5px] top-1/2 -translate-y-1/2 w-[25px] h-[60px] bg-[#9CC2FF]/50 blur-[10px] rotate-[33deg] transition-transform duration-500 ${playState === 'hover' ? 'translate-x-[-15px]' : ''} ${playState === 'loading' ? 'translate-x-[-120px] duration-1000' : ''} group-hover:translate-x-[-10px]`}></div>
-                        </button>
-                      )}
-                    </ComponentCard>
-                  )}
-                  {savedIds.includes("union-button") && (
-                    <ComponentCard id="union-button" title="Union button" tags={[{label: "React"}, {label: "Tailwind"}]}>
-                      {({ playState }) => (
-                        <button className={`relative bg-[#FBFCFD] border border-[#DEE1E4] h-[46px] px-[28px] rounded-[16px] flex items-center justify-center transition-all duration-300 ${playState === 'hover' ? 'shadow-md -translate-y-1' : 'shadow-sm'} ${playState === 'active' ? 'shadow-inner bg-[#F7F9FB] translate-y-0' : ''} hover:shadow-md`}>
-                          <span className="font-sans font-medium text-[16px] text-[#454545]">{playState === 'loading' ? 'Wait...' : 'Continue'}</span>
-                        </button>
-                      )}
-                    </ComponentCard>
-                  )}
-                  {savedIds.includes("magic-button") && (
-                    <ComponentCard id="magic-button" title="Magic button" tags={[{label: "React"}, {label: "Tailwind"}]}>
-                      {({ playState }) => (
-                        <button className={`bg-[#EEF1F4] border transition-all duration-300 px-[24px] py-[12px] rounded-full flex gap-2 items-center ${playState === 'hover' ? 'border-[#DEE1E4] shadow-sm scale-105' : 'border-transparent'} ${playState === 'active' ? 'scale-95 bg-[#DEE1E4]' : ''} hover:border-[#DEE1E4]`}>
-                          <Star size={18} className={`transition-all ${playState === 'hover' || playState === 'loading' ? 'text-yellow-500 fill-yellow-500' : 'text-[#454545]'}`} />
-                          <span className="font-sans font-medium text-[16px] text-[#454545]">Magic</span>
-                        </button>
-                      )}
-                    </ComponentCard>
-                  )}
-                  {savedIds.includes("accept-button") && (
-                    <ComponentCard id="accept-button" title="Accept button" tags={[{label: "React"}, {label: "Tailwind"}]}>
-                      {({ playState }) => (
-                        <button className={`relative bg-[#F6CC44] px-[28px] py-[12px] rounded-full flex items-center justify-center group transition-all duration-300 ${playState === 'hover' ? 'scale-105 shadow-[0_8px_20px_rgba(246,204,68,0.4)]' : 'shadow-[0_4px_14px_rgba(246,204,68,0.3)]'} ${playState === 'active' ? 'scale-95 shadow-none' : ''} hover:scale-105`}>
-                          <div className={`absolute inset-0 rounded-full bg-white/20 transition-opacity ${playState === 'hover' ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100`}></div>
-                          <span className="font-sans font-medium text-[16px] text-[#454545] relative z-10">{playState === 'loading' ? 'Accepting' : 'Accept'}</span>
-                        </button>
-                      )}
-                    </ComponentCard>
-                  )}
-                  {savedIds.includes("like-button") && (
-                    <ComponentCard id="like-button" title="Like button" tags={[{label: "React"}, {label: "Tailwind"}]}>
-                      {({ playState }) => (
-                        <button className={`bg-[#FBFCFD] border border-[#DEE1E4] px-[24px] py-[12px] rounded-full flex gap-[10px] items-center transition-all duration-300 shadow-sm ${playState === 'hover' ? 'bg-[#F7F9FB] scale-105' : ''} ${playState === 'active' || playState === 'loading' ? 'bg-[#FFEBEC] border-[#FFB3B8]' : ''} hover:bg-[#F7F9FB]`}>
-                          <Heart size={18} className={`transition-transform duration-300 text-[#CC0615] ${playState === 'active' || playState === 'loading' ? 'fill-[#CC0615] scale-125' : (playState === 'hover' ? 'fill-[#CC0615]/50' : 'fill-transparent')}`} />
-                          <span className="font-sans font-medium text-[16px] text-[#454545]">{playState === 'loading' ? 'Liked' : 'Like'}</span>
-                        </button>
-                      )}
-                    </ComponentCard>
-                  )}
-                  {savedIds.includes("generate-button") && (
-                    <ComponentCard id="generate-button" title="Generate button" tags={[{label: "React"}, {label: "Tailwind"}]}>
-                      {({ playState }) => (
-                        <button className={`relative bg-[#0E3067] px-[28px] py-[12px] rounded-full flex items-center justify-center group overflow-hidden transition-all duration-300 ${playState === 'hover' ? 'shadow-[#0E3067]/30 shadow-xl scale-105' : 'shadow-lg'} ${playState === 'active' ? 'scale-95' : ''}`}>
-                          <div className={`absolute top-[-5px] left-[-2px] h-[120%] bg-[#1566E5]/20 blur-[8px] rounded-full transition-all duration-500 ${playState === 'hover' || playState === 'loading' ? 'w-[100%]' : 'w-[60%]'} group-hover:w-[100%]`}></div>
-                          <span className="font-sans font-medium text-[16px] text-white relative z-10">{playState === 'loading' ? 'Generating...' : 'Generate'}</span>
-                        </button>
-                      )}
-                    </ComponentCard>
-                  )}
-                  {savedIds.includes("send-button") && (
-                    <ComponentCard id="send-button" title="Send button" tags={[{label: "React"}, {label: "Tailwind"}]}>
-                      {({ playState }) => (
-                        <button className={`bg-[#F5F9FF] border border-[#EAF2FF] px-[26px] py-[12px] rounded-full flex gap-[12px] items-center transition-all duration-300 ${playState === 'hover' ? 'bg-[#EAF2FF] scale-105 shadow-sm' : ''} ${playState === 'active' ? 'scale-95' : ''} hover:bg-[#EAF2FF]`}>
-                          <Send size={18} className={`text-[#1566E5] transition-transform duration-500 ${playState === 'loading' ? 'translate-x-10 opacity-0' : (playState === 'hover' ? 'translate-x-1 -translate-y-1' : '')}`} />
-                          <span className="font-sans font-medium text-[16px] text-[#454545]">{playState === 'loading' ? 'Sent!' : 'Send'}</span>
-                        </button>
-                      )}
-                    </ComponentCard>
-                  )}
-                </div>
+
+                          {/* Component Display Area */}
+                          <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden bg-transparent pointer-events-auto z-0 p-4">
+                            <div className="w-full h-full transform flex items-center justify-center scale-[0.9]">
+                              {RegistryComponent ? (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={activeOverrides as React.CSSProperties}
+                                  className="w-full h-full flex items-center justify-center"
+                                >
+                                  <RegistryComponent />
+                                </div>
+                              ) : comp.snippets?.html || comp.snippets?.css ? (
+                                <div className="w-[150%] h-[150%]">
+                                  <LivePreviewIframe
+                                    sourceType={(comp.source_type as "react" | "html_css" | "both") || "html_css"}
+                                    snippets={comp.snippets || {}}
+                                    schemaDefinition={comp.schema_definition}
+                                    overrides={activeOverrides}
+                                    className="w-full h-full border-none scale-[0.9] origin-center"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="text-[#7D7F82] font-medium text-sm flex flex-col items-center gap-1">
+                                  <span>Preview Unavailable</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Footer Area */}
+                          <div className="flex items-center justify-between px-[20px] py-[12px] w-full shrink-0 relative z-10 bg-transparent h-[48px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-auto border-t border-[#EEF1F4]/60">
+                            <div className="flex items-center gap-2 max-w-[100%]">
+                              <h3 className="font-sans font-medium text-[18px] leading-[1.2] text-[#454545] whitespace-nowrap truncate">
+                                {comp.title}
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
           </div>
         </div>
       </div>
+
+      {activeModalComponent && (
+        <ComponentModalPublic
+          component={activeModalComponent}
+          isOpen={!!activeModalComponent}
+          onClose={() => setActiveModalComponent(null)}
+        />
+      )}
     </div>
   );
 }

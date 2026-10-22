@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getPublishedComponents } from "@/lib/admin/components/queries";
+import { ProfileClient } from "./ProfileClient";
 
 export const metadata = {
   title: "Profile | UX With Motion",
   description: "User profile.",
 };
-
-import { ProfileClient } from "./ProfileClient";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -27,6 +27,20 @@ export default async function ProfilePage() {
 
   const isPremium = !!subscription;
 
-  return <ProfileClient user={user} isPremium={isPremium} subscription={subscription} />;
+  let components: any[] = [];
+  try {
+    components = (await getPublishedComponents()) || [];
+  } catch (err) {
+    console.error("Failed to load components for profile:", err);
+  }
+
+  return (
+    <ProfileClient 
+      user={user} 
+      isPremium={isPremium} 
+      subscription={subscription} 
+      initialComponents={components} 
+    />
+  );
 }
 
