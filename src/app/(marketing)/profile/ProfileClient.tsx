@@ -163,20 +163,55 @@ export function ProfileClient({
     if (!file) return;
 
     setIsUploading(true);
-    // Instant preview
-    const objectUrl = URL.createObjectURL(file);
-    setAvatarUrl(objectUrl);
 
     try {
-      // Simulate an upload delay for the UI
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      alert("Profile photo uploads will be enabled in a future update once the storage infrastructure is ready.");
-      
-      // We keep the local objectUrl preview so they can see what it would look like
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const rawData = event.target?.result as string;
+        if (!rawData) {
+          setIsUploading(false);
+          return;
+        }
+
+        const img = new window.Image();
+        img.onload = async () => {
+          try {
+            const canvas = document.createElement("canvas");
+            const size = 200;
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              const minDim = Math.min(img.width, img.height);
+              const sx = (img.width - minDim) / 2;
+              const sy = (img.height - minDim) / 2;
+              ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+
+              const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+              setAvatarUrl(compressedDataUrl);
+
+              await supabase.auth.updateUser({
+                data: { avatar_url: compressedDataUrl },
+              });
+              router.refresh();
+            }
+          } catch (err) {
+            console.error("Error saving avatar:", err);
+          } finally {
+            setIsUploading(false);
+          }
+        };
+        img.onerror = () => {
+          setIsUploading(false);
+        };
+        img.src = rawData;
+      };
+      reader.onerror = () => {
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
     } catch (err) {
       console.error(err);
-    } finally {
       setIsUploading(false);
     }
   };
@@ -196,8 +231,8 @@ export function ProfileClient({
           <div className="w-full lg:w-[340px] shrink-0 bg-[#FBFCFD] border border-[#DEE1E4] rounded-[24px] p-[32px] flex flex-col items-center">
             {/* Avatar with Hover Edit */}
             <div className="relative size-[80px] rounded-full overflow-hidden mb-[24px] group cursor-pointer border border-[#DEE1E4]" onClick={() => fileInputRef.current?.click()}>
-              {avatarUrl !== "/icons/user-placeholder.png" ? (
-                <Image src={avatarUrl} alt={firstName} fill className="object-cover" />
+              {avatarUrl && avatarUrl !== "/icons/user-placeholder.png" ? (
+                <img src={avatarUrl} alt={firstName} className="size-full object-cover" />
               ) : (
                 <div className="size-full bg-[#EEF1F4] flex items-center justify-center">
                   <span className="font-sans font-medium text-[24px] text-[#7D7F82]">{firstName.charAt(0)}</span>

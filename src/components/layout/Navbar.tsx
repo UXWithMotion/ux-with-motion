@@ -87,8 +87,8 @@ export function Navbar({
 
       {/* Desktop & Tablet Navigation */}
       <div className="hidden md:flex items-center justify-between w-full px-6 lg:px-[70px] py-[7px] min-h-[65px]">
-        {/* Left: Brand Logo & Navigation Link */}
-        <div className="flex-1 flex items-center justify-start gap-[29px] min-w-0">
+        {/* Left: Brand Logo */}
+        <div className="flex-1 flex items-center justify-start min-w-0">
           <Link
             href="/"
             className="flex items-center hover:opacity-90 transition-opacity"
@@ -104,13 +104,6 @@ export function Navbar({
                 className="size-full object-contain"
               />
             </div>
-          </Link>
-
-          <Link
-            href="/components"
-            className="font-sans font-medium text-[16px] text-black hover:text-[#7D7F82] transition-colors leading-[1.2] whitespace-nowrap"
-          >
-            Components
           </Link>
         </div>
 
@@ -202,9 +195,14 @@ export function Navbar({
           </AnimatePresence>
         </div>
 
-        {/* Right: Pricing & CTA / Account */}
+        {/* Right: Navigation & CTA / Account */}
         <div className="flex-1 flex items-center justify-end gap-[32px] min-w-0">
-          {/* Pricing link temporarily disabled */}
+          <Link
+            href="/components"
+            className="font-sans font-medium text-[16px] text-black hover:text-[#7D7F82] transition-colors leading-[1.2] whitespace-nowrap"
+          >
+            Components
+          </Link>
 
           {variant === "logged-out" ? (
             <Button
