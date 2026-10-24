@@ -28,12 +28,27 @@ const gcGudlak = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "UX With Motion",
-  description: "Premium UI, starting here. Discover 50+ thoughtfully crafted UI components to explore, learn from, and get inspired.",
+  metadataBase: new URL("https://uxwithmotion.com"),
+  title: {
+    default: "uxwithmotion — UI Components & Motion",
+    template: "%s | uxwithmotion",
+  },
+  description:
+    "Explore UI components, animations, and reusable code to build modern web experiences.",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "UX With Motion",
-    description: "Premium UI, starting here. Discover 50+ thoughtfully crafted UI components to explore, learn from, and get inspired.",
-    siteName: "UX With Motion",
+    title: "uxwithmotion — UI Components & Motion",
+    description:
+      "Explore reusable UI components and motion effects.",
+    url: "https://uxwithmotion.com",
+    siteName: "uxwithmotion",
+    type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

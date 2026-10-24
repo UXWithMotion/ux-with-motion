@@ -17,7 +17,7 @@ export function BentoSection() {
         {/* Section Heading */}
         <div className="text-center mb-12 md:mb-16">
           <h2 className="font-title font-bold text-[32px] sm:text-[44px] md:text-[61px] leading-[1.12] text-[#454545] tracking-[-0.02em] text-balance">
-            50 crafted button components.
+            Crafted button components.
           </h2>
         </div>
 
