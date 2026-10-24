@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import localFont from "next/font/local";
 import NextTopLoader from 'nextjs-toploader';
@@ -46,6 +47,23 @@ export default function RootLayout({
       <body
         className={`${plusJakarta.variable} ${gcGudlak.variable} min-h-screen bg-[#FBFCFD] text-[#454545] font-sans`}
       >
+        {/* Google tag (gtag.js) */}
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-W20DFBH7L3"
+        />
+        <Script
+          id="google-analytics"
+          strategy="afterInteractive"
+        >
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag("js", new Date());
+
+            gtag("config", "G-W20DFBH7L3");
+          `}
+        </Script>
         <NextTopLoader showSpinner={false} color="#000000" />
         <CustomizationProvider>
           {children}
