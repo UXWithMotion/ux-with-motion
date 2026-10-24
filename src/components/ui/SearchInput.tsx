@@ -52,15 +52,20 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
       <div
         className={`border border-[#DEE1E4] focus-within:border-[#B0B0B0] flex items-center gap-3 px-4 py-3 rounded-[32px] transition-all ${className} ${hasValue ? 'bg-[#F1F4F6]' : 'bg-[#EEF1F4]'}`}
       >
-        <div className="relative shrink-0 size-[20px] sm:size-[24px] pointer-events-none">
+        <button
+          type="submit"
+          onClick={onSearchClick}
+          aria-label="Search"
+          className="relative shrink-0 size-[20px] sm:size-[24px] flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1566E5] rounded-full"
+        >
           <Image
             src="/icons/search.svg"
-            alt="Search"
+            alt=""
             width={24}
             height={24}
-            className="size-full object-contain"
+            className="size-full object-contain pointer-events-none"
           />
-        </div>
+        </button>
         <input
           ref={ref}
           type="search"

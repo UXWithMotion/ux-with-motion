@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
+import { X } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { IconWrapper } from "@/components/ui/IconWrapper";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { UserDropdown } from "@/components/layout/UserDropdown";
 
 
@@ -27,11 +27,115 @@ export function Navbar({
   onSearchSubmit,
 }: NavbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+
+  // Dynamic auth state initialized from SSR props but maintained client-side
+  const [authVariant, setAuthVariant] = useState(variant);
+  const [authUserName, setAuthUserName] = useState(userName);
+  const [authUserEmail, setAuthUserEmail] = useState(userEmail);
+  const [prevProps, setPrevProps] = useState({ variant, userName, userEmail });
+
+  // Sync state during render if server component props change
+  if (
+    prevProps.variant !== variant ||
+    prevProps.userName !== userName ||
+    prevProps.userEmail !== userEmail
+  ) {
+    setPrevProps({ variant, userName, userEmail });
+    setAuthVariant(variant);
+    setAuthUserName(userName);
+    setAuthUserEmail(userEmail);
+  }
+
+  // Client-side auth listener so Navbar immediately reflects login/logout without page refresh
+  useEffect(() => {
+    let mounted = true;
+    let unsubscribe: (() => void) | null = null;
+
+    import("@/lib/supabase/browser").then(({ createClient }) => {
+      if (!mounted) return;
+      const supabase = createClient();
+
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!mounted) return;
+        if (session?.user) {
+          setAuthVariant("logged-in");
+          setAuthUserName(
+            session.user.user_metadata?.full_name ||
+            session.user.user_metadata?.name ||
+            "User"
+          );
+          setAuthUserEmail(session.user.email || "");
+        }
+      });
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!mounted) return;
+        if (session?.user) {
+          setAuthVariant("logged-in");
+          setAuthUserName(
+            session.user.user_metadata?.full_name ||
+            session.user.user_metadata?.name ||
+            "User"
+          );
+          setAuthUserEmail(session.user.email || "");
+        } else {
+          setAuthVariant("logged-out");
+          setAuthUserName("User");
+          setAuthUserEmail("");
+        }
+      });
+
+      if (!mounted) {
+        subscription.unsubscribe();
+      } else {
+        unsubscribe = () => subscription.unsubscribe();
+      }
+    });
+
+    return () => {
+      mounted = false;
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, []);
+
+  // Sync search input with URL search params when on /components
+  useEffect(() => {
+    const syncQuery = () => {
+      if (typeof window !== "undefined") {
+        if (pathname === "/components") {
+          const params = new URLSearchParams(window.location.search);
+          const q = params.get("search") || "";
+          setSearchQuery(q);
+        } else if (!pathname?.startsWith("/components")) {
+          setSearchQuery("");
+        }
+      }
+    };
+
+    syncQuery();
+    window.addEventListener("popstate", syncQuery);
+    return () => window.removeEventListener("popstate", syncQuery);
+  }, [pathname]);
+
+  // Handle Escape key to close mobile search modal
+  useEffect(() => {
+    if (!mobileSearchOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMobileSearchOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileSearchOpen]);
 
   const { scrollY } = useScroll();
 
@@ -44,9 +148,10 @@ export function Navbar({
     }
   });
 
-  const handleSearchSubmit = (e?: React.SubmitEvent, query?: string) => {
+  const handleSearchSubmit = (e?: React.FormEvent, query?: string) => {
     if (e) e.preventDefault();
-    const q = query ?? searchQuery;
+    const rawQuery = query !== undefined ? query : searchQuery;
+    const q = rawQuery.trim();
 
     // Return search bar to default state
     setIsSearchFocused(false);
@@ -57,8 +162,17 @@ export function Navbar({
 
     if (onSearchSubmit) {
       onSearchSubmit(q);
-    } else if (q.trim()) {
-      router.push(`/components?search=${encodeURIComponent(q.trim())}`);
+    } else if (q) {
+      router.push(`/components?search=${encodeURIComponent(q)}`);
+    } else {
+      router.push("/components");
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    if (pathname === "/components") {
+      router.push("/components");
     }
   };
 
@@ -116,7 +230,8 @@ export function Navbar({
             <SearchInput
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onClear={() => setSearchQuery("")}
+              onClear={handleClearSearch}
+              onSearchClick={() => handleSearchSubmit()}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
               placeholder="Search ui components"
@@ -204,7 +319,7 @@ export function Navbar({
             Components
           </Link>
 
-          {variant === "logged-out" ? (
+          {authVariant === "logged-out" ? (
             <Button
               variant="primary"
               size="md"
@@ -214,7 +329,7 @@ export function Navbar({
             </Button>
           ) : (
             <div className="flex items-center gap-4">
-              <UserDropdown userName={userName} userEmail={userEmail} />
+              <UserDropdown userName={authUserName} userEmail={authUserEmail} />
             </div>
           )}
         </div>
@@ -279,7 +394,7 @@ export function Navbar({
           </IconWrapper>
 
           {/* Mobile Sign Up CTA */}
-          {variant === "logged-out" ? (
+          {authVariant === "logged-out" ? (
             <Button
               variant="primary"
               size="sm"
@@ -289,7 +404,7 @@ export function Navbar({
             </Button>
           ) : (
             <div className="flex items-center gap-3">
-              <UserDropdown userName={userName} userEmail={userEmail} />
+              <UserDropdown userName={authUserName} userEmail={authUserEmail} />
               {/* Mobile menu logout is already integrated inside the UserDropdown component. */}
             </div>
           )}
@@ -311,16 +426,27 @@ export function Navbar({
           >
             <div className="w-full max-w-[342px] flex flex-col gap-[10px]">
               {/* Search Bar Row */}
-              <form onSubmit={(e) => handleSearchSubmit(e, searchQuery)} className="w-full">
-                <SearchInput
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onClear={() => setSearchQuery("")}
-                  placeholder="Search ui components"
-                  className="w-full bg-white !px-[24px] !py-[16px] h-[56px] !rounded-[32px]"
-                  autoFocus
-                />
-              </form>
+              <div className="flex items-center gap-2 w-full">
+                <form onSubmit={(e) => handleSearchSubmit(e, searchQuery)} className="flex-1">
+                  <SearchInput
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onClear={handleClearSearch}
+                    onSearchClick={() => handleSearchSubmit(undefined, searchQuery)}
+                    placeholder="Search ui components"
+                    className="w-full bg-white !px-[20px] !py-[14px] h-[52px] !rounded-[32px]"
+                    autoFocus
+                  />
+                </form>
+                <button
+                  type="button"
+                  onClick={() => setMobileSearchOpen(false)}
+                  className="shrink-0 size-[44px] rounded-full bg-white text-[#454545] hover:text-black flex items-center justify-center shadow-sm cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1566E5]"
+                  aria-label="Close search"
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
               {/* Suggestions Box */}
               <div className="bg-white w-full rounded-[24px] p-[20px] shadow-sm flex flex-col gap-[20px] max-h-[80vh] overflow-y-auto">
@@ -338,8 +464,9 @@ export function Navbar({
                       { label: "Product cards", count: "1" },
                       { label: "filter", count: "1" },
                     ].map((tag, i) => (
-                      <div
+                      <button
                         key={i}
+                        type="button"
                         className="flex items-center gap-[7px] h-[34px] px-[13px] rounded-full bg-black/5 cursor-pointer hover:bg-black/10 transition-colors"
                         onClick={() => {
                           setSearchQuery(tag.label);
@@ -352,7 +479,7 @@ export function Navbar({
                         <span className="font-mono font-medium text-[11px] text-[#85847E] uppercase tracking-[0.66px]">
                           {tag.count}
                         </span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -415,7 +542,7 @@ export function Navbar({
               </Link>
               {/* Mobile Pricing link temporarily disabled */}
               <div className="pt-2">
-                {variant === "logged-out" && (
+                {authVariant === "logged-out" && (
                   <Button
                     variant="primary"
                     fullWidth

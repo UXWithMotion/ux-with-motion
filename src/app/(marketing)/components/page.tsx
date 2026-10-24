@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense, useState, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { ComponentCard } from "@/components/ui/ComponentCard";
 import { ChevronDown, Check, X, Bookmark } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -93,8 +93,10 @@ function FilterDropdown({ label, options, selected, onChange }: FilterDropdownPr
 import { useCustomization } from "@/components/providers/CustomizationProvider";
 
 function ComponentsContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const search = searchParams?.get("search")?.toLowerCase() || "";
+  const rawSearch = searchParams?.get("search") || "";
+  const search = rawSearch.toLowerCase();
   const [isFigmaActive, setIsFigmaActive] = useState(false);
   
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
@@ -185,11 +187,18 @@ function ComponentsContent() {
       </div>
 
       <div className="w-full px-6 lg:px-[70px]">
-        {search && (
-          <div className="mb-6">
+        {rawSearch && (
+          <div className="mb-6 flex items-center justify-between gap-4">
             <h2 className="font-sans text-[20px] text-[#454545]">
-              Search results for: <span className="font-bold">&quot;{search}&quot;</span>
+              Search results for: <span className="font-bold">&quot;{rawSearch}&quot;</span>
             </h2>
+            <button
+              type="button"
+              onClick={() => router.push("/components")}
+              className="text-[14px] font-medium text-[#1566E5] hover:underline cursor-pointer shrink-0"
+            >
+              Clear search
+            </button>
           </div>
         )}
         
@@ -217,8 +226,21 @@ function ComponentsContent() {
             ))}
           </div>
         ) : filteredComponents.length === 0 ? (
-          <div className="w-full py-20 flex flex-col items-center justify-center text-center">
-            <p className="text-[20px] text-[#7D7F82] font-medium">No published components found.</p>
+          <div className="w-full py-20 flex flex-col items-center justify-center text-center gap-4">
+            <p className="text-[20px] text-[#7D7F82] font-medium">
+              {rawSearch
+                ? `No components found matching "${rawSearch}".`
+                : "No published components found."}
+            </p>
+            {rawSearch && (
+              <button
+                type="button"
+                onClick={() => router.push("/components")}
+                className="px-5 py-2.5 bg-[#EEF1F4] hover:bg-[#DEE1E4] text-[#454545] font-sans font-medium text-[15px] rounded-full transition-colors cursor-pointer"
+              >
+                Clear search
+              </button>
+            )}
           </div>
         ) : (
           <div className="columns-1 md:columns-2 lg:columns-3 gap-[24px] w-full">

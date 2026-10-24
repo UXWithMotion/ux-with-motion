@@ -14,7 +14,7 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
@@ -22,18 +22,22 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value, options: cookieOptions }) =>
             supabaseResponse.cookies.set(name, value, cookieOptions)
           )
+          if (headers) {
+            Object.entries(headers).forEach(([key, value]) =>
+              supabaseResponse.headers.set(key, value)
+            )
+          }
         },
       },
     }
   )
 
-  // Use getUser() to refresh the session automatically. 
-  // We wrap it in a try-catch to prevent unhandled AuthApiErrors (like 'refresh_token_not_found') 
-  // from crashing the request. The SSR client's setAll callback automatically clears the stale cookies.
+  // Trigger session refresh / token update
+  // The SSR client's setAll callback automatically updates cookies and applies cache headers.
   try {
-    await supabase.auth.getUser()
-  } catch (_err) {
-    // Gracefully recover by ignoring the error; the user is now treated as logged out.
+    await supabase.auth.getClaims()
+  } catch {
+    // Gracefully recover by ignoring the error; the user is treated as logged out.
   }
 
   // The proxy is primarily responsible for refreshing the session.

@@ -13,10 +13,16 @@ export default function LoginPage() {
     try {
       const { createClient } = await import('@/lib/supabase/browser');
       const supabase = createClient();
+      const nextParam = new URLSearchParams(window.location.search).get('next');
+      let callbackUrl = `${window.location.origin}/auth/callback`;
+      if (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.includes('\\')) {
+        callbackUrl += `?next=${encodeURIComponent(nextParam)}`;
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: callbackUrl,
         },
       });
       if (error) {
