@@ -48,7 +48,7 @@ export function Hero() {
                 Premium UI, starting here
               </h1>
               <p className="font-sans font-normal text-[18px] sm:text-[20px] md:text-[22px] leading-[1.6] text-[#7D7F82] max-w-[572px] text-balance">
-                Discover 50+ thoughtfully crafted UI components to explore, learn
+                Discover 50+ thoughtfully crafted UI components by UXWithMotion (UX With Motion) to explore, learn
                 from, and get inspired.
               </p>
             </div>

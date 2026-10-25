@@ -103,7 +103,8 @@ export function ComponentModalPublic({
     : (component.snippets || registryEntry?.snippets || { html: "", css: "", nextjs: "" });
 
   const handleSignInClick = () => {
-    let returnUrl = `/components?component=${encodeURIComponent(component.registry_id || component.id)}&tab=code`;
+    const slug = component.registry_id || component.id;
+    let returnUrl = `/components/${encodeURIComponent(slug)}?tab=code`;
     if (typeof window !== "undefined") {
       const currentParams = new URLSearchParams(window.location.search);
       const search = currentParams.get("search");

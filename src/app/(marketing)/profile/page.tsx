@@ -4,8 +4,8 @@ import { getPublishedComponents } from "@/lib/admin/components/queries";
 import { ProfileClient } from "./ProfileClient";
 
 export const metadata = {
-  title: "Profile | UX With Motion",
-  description: "User profile.",
+  title: "Profile",
+  description: "User profile on uxwithmotion (UX With Motion).",
 };
 
 export default async function ProfilePage() {

@@ -5,8 +5,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      disallow: ["/api/", "/_next/", "/admin/"],
     },
-    sitemap: "https://uxwithmotion.com/sitemap.xml",
+    sitemap: "https://www.uxwithmotion.com/sitemap.xml",
   };
 }
-

@@ -2,8 +2,8 @@ import React from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Login | UX With Motion",
-  description: "Sign in to UX With Motion.",
+  title: "Login",
+  description: "Sign in to uxwithmotion (UX With Motion).",
 };
 
 export default function AuthLayout({
