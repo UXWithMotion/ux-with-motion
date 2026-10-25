@@ -28,7 +28,7 @@ const gcGudlak = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://uxwithmotion.com"),
+  metadataBase: new URL("https://www.uxwithmotion.com"),
   title: {
     default: "uxwithmotion — UX With Motion | Crafted UI Components",
     template: "%s | uxwithmotion — UX With Motion",
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     title: "uxwithmotion — UX With Motion | Crafted UI Components",
     description:
       "Explore 50+ animated UI components by UX With Motion (uxwithmotion). Copy-paste interactive buttons, badges, and micro-interactions for Figma and React.",
-    url: "https://uxwithmotion.com",
+    url: "https://www.uxwithmotion.com",
     siteName: "uxwithmotion — UX With Motion",
     type: "website",
   },
@@ -95,7 +95,7 @@ const jsonLd = {
       "@type": "WebSite",
       "name": "uxwithmotion",
       "alternateName": ["UX With Motion", "UXWithMotion"],
-      "url": "https://uxwithmotion.com/",
+      "url": "https://www.uxwithmotion.com/",
       "description":
         "Explore 50+ animated UI components by UX With Motion (uxwithmotion). Copy-paste interactive buttons, badges, and micro-interactions for Figma and React.",
     },
@@ -103,8 +103,8 @@ const jsonLd = {
       "@type": "Organization",
       "name": "UX With Motion",
       "alternateName": "uxwithmotion",
-      "url": "https://uxwithmotion.com/",
-      "logo": "https://uxwithmotion.com/icon.png",
+      "url": "https://www.uxwithmotion.com/",
+      "logo": "https://www.uxwithmotion.com/icon.png",
       "sameAs": [
         "https://instagram.com/uxwithmotion",
       ],
