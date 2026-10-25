@@ -25,6 +25,7 @@ import { ViewMoreEyeButton } from "@/components/motion-components/buttons/ViewMo
 import { ServicesIndicatorButton } from "@/components/motion-components/buttons/ServicesIndicatorButton";
 import { LiveSession } from "@/components/motion-components/LiveSession";
 import { LiveSessionInvite } from "@/components/motion-components/LiveSessionInvite";
+import { AiSearchToggle } from "@/components/motion-components/inputs/AiSearchToggle";
 
 export type ComponentRegistrySnippets = {
   html: string;
@@ -355,17 +356,6 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
       html: `<button class="services-btn">Services Indicator</button>`,
       css: `.services-btn { /* styles */ }`,
       nextjs: `// React code for ServicesIndicatorButton`
-    }
-  },
-  "ai-search-toggle": {
-    registryId: "ai-search-toggle",
-    name: "AI Search Toggle",
-    category: "Inputs",
-    component: AiSearchToggle,
-    snippets: {
-      html: `<div class="ai-search-toggle"></div>`,
-      css: `.ai-search-toggle { /* styles */ }`,
-      react: `// React code for AiSearchToggle`
     }
   }
 };
