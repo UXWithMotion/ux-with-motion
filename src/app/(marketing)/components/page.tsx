@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useState, useEffect, useRef } from "react";
+import React, { Suspense, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ComponentCard } from "@/components/ui/ComponentCard";
 import { ChevronDown, Check, X, Bookmark } from "lucide-react";
@@ -106,33 +106,113 @@ function ComponentsContent() {
   const [components, setComponents] = useState<ComponentItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   
-  const [activeModalComponent, setActiveModalComponent] = useState<ComponentItem | null>(null);
+  const [activeModalOverride, setActiveModalOverride] = useState<ComponentItem | null | undefined>(undefined);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<string[]>([]);
-  
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
   const { getOverrides } = useCustomization();
 
-  useEffect(() => {
-    const loadComponents = async () => {
-      try {
-        const published = await getPublishedComponents();
-        setComponents(published || []);
-      } catch (e) {
-        console.error(e);
-      }
-      
-      const bookmarks = JSON.parse(localStorage.getItem("saved_components") || "[]");
-      setSavedIds(bookmarks);
-      
-      setIsLoaded(true);
-    };
+  const loadComponents = useCallback(async () => {
+    try {
+      const published = await getPublishedComponents();
+      const comps = published || [];
+      setComponents(comps);
+      setActiveModalOverride(prev => {
+        if (!prev) return prev;
+        return comps.find(c => c.id === prev.id || c.registry_id === prev.registry_id) || prev;
+      });
+    } catch (e) {
+      console.error("Failed to load components:", e);
+    }
 
-    loadComponents();
+    const bookmarks = JSON.parse(localStorage.getItem("saved_components") || "[]");
+    setSavedIds(bookmarks);
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    void loadComponents();
     window.addEventListener("saved_components_changed", loadComponents);
     return () => {
       window.removeEventListener("saved_components_changed", loadComponents);
-    }
+    };
+  }, [loadComponents]);
+
+  // Listen to auth changes so components re-fetch with unlocked source code upon sign-in
+  useEffect(() => {
+    let mounted = true;
+    let unsubscribe: (() => void) | null = null;
+
+    import("@/lib/supabase/browser").then(({ createClient }) => {
+      if (!mounted) return;
+      const supabase = createClient();
+
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!mounted) return;
+        setIsAuthenticated(!!session?.user);
+      });
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!mounted) return;
+        setIsAuthenticated(!!session?.user);
+        void loadComponents();
+      });
+
+      if (!mounted) {
+        subscription.unsubscribe();
+      } else {
+        unsubscribe = () => subscription.unsubscribe();
+      }
+    });
+
+    return () => {
+      mounted = false;
+      if (unsubscribe) unsubscribe();
+    };
+  }, [loadComponents]);
+
+  // Handle browser back/forward history for modal
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveModalOverride(undefined);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
+  const compParam = searchParams?.get("component");
+  const activeModalComponent = useMemo(() => {
+    if (activeModalOverride !== undefined) {
+      return activeModalOverride;
+    }
+    if (compParam && components.length > 0) {
+      return components.find(c => c.registry_id === compParam || c.id === compParam) || null;
+    }
+    return null;
+  }, [activeModalOverride, compParam, components]);
+
+  const handleOpenModal = (comp: ComponentItem) => {
+    setActiveModalOverride(comp);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("component", comp.registry_id || comp.id);
+      params.set("tab", "code");
+      const newQuery = params.toString();
+      window.history.replaceState(null, "", `/components${newQuery ? `?${newQuery}` : ""}`);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setActiveModalOverride(null);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.delete("component");
+      params.delete("tab");
+      const newQuery = params.toString();
+      window.history.replaceState(null, "", `/components${newQuery ? `?${newQuery}` : ""}`);
+    }
+  };
 
   const normalizedSearch = search ? search.toLowerCase().trim().replace(/\s+/g, " ") : "";
   const searchTerms = normalizedSearch.split(" ").map(word => {
@@ -251,18 +331,12 @@ function ComponentsContent() {
               return (
                 <div 
                   key={comp.id}
-                  onClick={() => setActiveModalComponent(comp)}
+                  onClick={() => handleOpenModal(comp)}
                   className="bg-[#F7F9FB] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip group cursor-pointer break-inside-avoid mb-[24px] min-h-[251px]"
                 >
                   {/* Top action bar */}
                   <div className="flex items-center justify-between p-[8px] w-full shrink-0 relative z-10 bg-transparent min-h-[50px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <div className="flex items-center">
-                      {(comp as any).access_tier === 'premium' && (
-                        <div className="flex items-center justify-center bg-[#FDF8F0] border border-[#F3E2C6] rounded-full px-2 py-0.5 shrink-0 ml-1" title="Premium Component">
-                          <span className="text-[#C18824] text-[10px] font-bold uppercase tracking-wider">Premium</span>
-                        </div>
-                      )}
-                    </div>
+                    <div className="flex items-center" />
                     <div className="flex gap-[6px] items-center">
                       <button 
                         onClick={(e) => toggleSave(e, comp.id)}
@@ -344,7 +418,8 @@ function ComponentsContent() {
         <ComponentModalPublic
           component={activeModalComponent}
           isOpen={!!activeModalComponent}
-          onClose={() => setActiveModalComponent(null)}
+          onClose={handleCloseModal}
+          isAuthenticated={isAuthenticated}
         />
       )}
     </div>

@@ -543,6 +543,7 @@ export function ProfileClient({
           component={activeModalComponent}
           isOpen={!!activeModalComponent}
           onClose={() => setActiveModalComponent(null)}
+          isAuthenticated={true}
         />
       )}
     </div>

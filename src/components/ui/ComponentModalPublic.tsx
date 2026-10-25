@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { X, Check, Copy, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { componentRegistry } from "@/lib/registry/components";
@@ -23,24 +24,27 @@ export interface ComponentModalPublicProps {
   component: ComponentItem;
   isOpen: boolean;
   onClose: () => void;
+  isAuthenticated?: boolean;
 }
 
 export function ComponentModalPublic({
   component,
   isOpen,
   onClose,
+  isAuthenticated,
 }: ComponentModalPublicProps) {
+  const router = useRouter();
   const { getOverrides, setOverrides: updateGlobalOverrides, saveOverrides } = useCustomization();
 
   const [copied, setCopied] = useState<string | false>(false);
-  const [overrides, setOverrides] = useState<Record<string, string>>({});
-  
-  // Reset overrides when a new component is opened
-  useEffect(() => {
-    if (isOpen) {
-      setOverrides(getOverrides(component.id));
-    }
-  }, [isOpen, component.id, getOverrides]);
+  const [prevComponentId, setPrevComponentId] = useState(component.id);
+  const [overrides, setOverrides] = useState<Record<string, string>>(() => getOverrides(component.id));
+
+  // Reset overrides when a new component is opened without triggering cascading effect renders
+  if (component.id !== prevComponentId) {
+    setPrevComponentId(component.id);
+    setOverrides(getOverrides(component.id));
+  }
 
   const handleOverrideChange = (key: string, value: string) => {
     const newOverrides = { ...overrides, [key]: value };
@@ -90,13 +94,25 @@ export function ComponentModalPublic({
     return `\n\n<style>\n:root {\n${Object.entries(activeOverrides).map(([k,v]) => `  ${k}: ${v};`).join('\n')}\n}\n</style>`;
   }, [activeOverrides]);
 
-  // The server explicitly sets is_locked to true if the component was scrubbed
-  const isLockedPremium = !!component.is_locked;
+  // User must be authenticated to view or copy source code during public beta
+  const isLocked = isAuthenticated !== undefined ? !isAuthenticated : !!component.is_locked;
   
-  // Fallback to registry if DB doesn't have snippets and it hasn't been scrubbed
-  const snippets = isLockedPremium 
-    ? { html: "", css: "", nextjs: "" } 
+  // Fallback to registry if DB doesn't have snippets and it hasn't been locked
+  const snippets = isLocked
+    ? { html: "", css: "", nextjs: "" }
     : (component.snippets || registryEntry?.snippets || { html: "", css: "", nextjs: "" });
+
+  const handleSignInClick = () => {
+    let returnUrl = `/components?component=${encodeURIComponent(component.registry_id || component.id)}&tab=code`;
+    if (typeof window !== "undefined") {
+      const currentParams = new URLSearchParams(window.location.search);
+      const search = currentParams.get("search");
+      if (search) {
+        returnUrl += `&search=${encodeURIComponent(search)}`;
+      }
+    }
+    router.push(`/login?next=${encodeURIComponent(returnUrl)}`);
+  };
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -170,11 +186,6 @@ export function ComponentModalPublic({
                     <h2 className="font-sans font-medium text-[24px] md:text-[31px] text-[#454545] leading-[1.2]">
                       {component.title}
                     </h2>
-                    {component.access_tier === 'premium' && (
-                      <div className="flex items-center justify-center bg-[#FDF8F0] border border-[#F3E2C6] rounded-full px-2 py-0.5 shrink-0" title="Premium Component">
-                        <span className="text-[#C18824] text-[10px] font-bold uppercase tracking-wider">Premium</span>
-                      </div>
-                    )}
                   </div>
                   <button
                     onClick={handleClose}
@@ -189,22 +200,23 @@ export function ComponentModalPublic({
 
                 {/* Tab Content */}
                 <div className="flex-1 overflow-y-auto w-full pr-2">
-                  {isLockedPremium ? (
-                    <div className="flex flex-col items-center justify-center h-full w-full max-w-[593px] text-center gap-4 py-12">
-                      <div className="w-16 h-16 rounded-full bg-[#FDF8F0] border border-[#F3E2C6] flex items-center justify-center mb-2">
-                        <Lock className="text-[#C18824] w-8 h-8" />
+                  {isLocked ? (
+                    <div className="flex flex-col items-center justify-center h-full w-full max-w-[593px] text-center gap-4 py-12 px-4">
+                      <div className="size-16 rounded-full bg-[#EEF1F4] border border-[#DEE1E4] flex items-center justify-center mb-1">
+                        <Lock className="text-[#454545] size-7" />
                       </div>
-                      <h3 className="font-sans font-bold text-[20px] text-[#454545]">
-                        Premium Component
+                      <h3 className="font-sans font-bold text-[22px] text-[#454545]">
+                        Sign in to view code
                       </h3>
-                      <p className="text-[#7D7F82] text-[14px] max-w-[300px]">
-                        Sign in and Upgrade to Premium to unlock full source code and customization.
+                      <p className="text-[#7D7F82] text-[15px] leading-relaxed max-w-[360px]">
+                        Source code and copy features are free during our public beta. Sign in with Google to access, inspect, and copy this component.
                       </p>
                       <button 
-                        onClick={() => window.location.href = '/pricing'}
-                        className="mt-4 bg-[#1F2123] text-white px-6 py-3 rounded-full font-sans font-medium text-[15px] hover:bg-black transition-colors"
+                        type="button"
+                        onClick={handleSignInClick}
+                        className="mt-3 bg-[#1F2123] text-white px-8 py-3.5 rounded-full font-sans font-medium text-[15px] hover:bg-black transition-all cursor-pointer shadow-sm hover:shadow active:scale-[0.98]"
                       >
-                        Upgrade to Premium
+                        Sign in to view code
                       </button>
                     </div>
                   ) : (
@@ -234,7 +246,7 @@ export function ComponentModalPublic({
                                 <span className="text-[#C18824] shrink-0 text-lg">💡</span>
                                 <p className="text-[#A0701C] text-[13px] leading-relaxed">
                                   <strong>Customization applied via CSS variables.</strong> The Next.js code below is the authoritative structural source. 
-                                  To use your customizations, apply the CSS variables to the component's container in your global CSS.
+                                  To use your customizations, apply the CSS variables to the component&apos;s container in your global CSS.
                                 </p>
                               </div>
                             )}

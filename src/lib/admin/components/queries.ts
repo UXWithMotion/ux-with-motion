@@ -38,11 +38,13 @@ export async function getAdminComponent(id: string) {
 }
 
 export async function getPublishedComponents() {
+  const { createClient } = await import("@/lib/supabase/server");
+  const authSupabase = await createClient();
+  const { data: { user } } = await authSupabase.auth.getUser();
+  const isAuthenticated = !!user;
+
   const { createServiceRoleClient } = await import("@/lib/supabase/service-role");
   const supabase = createServiceRoleClient();
-  const { getUserEntitlement } = await import("@/lib/auth/entitlement");
-  
-  const { isPremium } = await getUserEntitlement();
 
   const { data, error } = await supabase
     .from("components")
@@ -55,10 +57,16 @@ export async function getPublishedComponents() {
     throw new Error(error.message);
   }
 
-  // Task 5: Secure Data Boundary - scrub protected fields for Premium components if user is not Premium
+  // Beta Scope: No Free-vs-Premium distinction. Signed-in users get source snippets;
+  // signed-out visitors have source snippets scrubbed at the server boundary.
   const scrubbedData = data.map(comp => {
-    // TEMPORARILY: Make all components free
     comp.access_tier = 'free';
+    if (!isAuthenticated) {
+      comp.snippets = null;
+      comp.is_locked = true;
+    } else {
+      comp.is_locked = false;
+    }
     return comp;
   });
 
