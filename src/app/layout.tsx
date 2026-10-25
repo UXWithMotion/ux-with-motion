@@ -30,32 +30,86 @@ const gcGudlak = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL("https://uxwithmotion.com"),
   title: {
-    default: "uxwithmotion — UI Components & Motion",
-    template: "%s | uxwithmotion",
+    default: "uxwithmotion — UX With Motion | Crafted UI Components",
+    template: "%s | uxwithmotion — UX With Motion",
   },
   description:
-    "Explore UI components, animations, and reusable code to build modern web experiences.",
+    "Explore 50+ animated UI components by UX With Motion (uxwithmotion). Copy-paste interactive buttons, badges, and micro-interactions for Figma and React.",
+  keywords: [
+    "uxwithmotion",
+    "UX With Motion",
+    "UXWithMotion",
+    "animated UI components",
+    "micro-interactions",
+    "React motion components",
+    "Framer Motion",
+    "Figma UI components",
+    "interactive buttons",
+  ],
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "uxwithmotion — UI Components & Motion",
+    title: "uxwithmotion — UX With Motion | Crafted UI Components",
     description:
-      "Explore reusable UI components and motion effects.",
+      "Explore 50+ animated UI components by UX With Motion (uxwithmotion). Copy-paste interactive buttons, badges, and micro-interactions for Figma and React.",
     url: "https://uxwithmotion.com",
-    siteName: "uxwithmotion",
+    siteName: "uxwithmotion — UX With Motion",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "uxwithmotion — UX With Motion | Crafted UI Components",
+    description:
+      "Explore 50+ animated UI components by UX With Motion (uxwithmotion). Copy-paste interactive buttons, badges, and micro-interactions for Figma and React.",
   },
   robots: {
     index: true,
     follow: true,
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/icon.png", sizes: "192x192", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  manifest: "/site.webmanifest",
   verification: {
     google: [
       "8oKlrphvXeGncRQXDCYdZvtD0kuGH2fvDF00gn0sMV4",
       "xQKqwaghJEMloMQ0cQ0-Eb3KYqsBNRlVx-H2SCYTAUI",
     ],
   },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "name": "uxwithmotion",
+      "alternateName": ["UX With Motion", "UXWithMotion"],
+      "url": "https://uxwithmotion.com/",
+      "description":
+        "Explore 50+ animated UI components by UX With Motion (uxwithmotion). Copy-paste interactive buttons, badges, and micro-interactions for Figma and React.",
+    },
+    {
+      "@type": "Organization",
+      "name": "UX With Motion",
+      "alternateName": "uxwithmotion",
+      "url": "https://uxwithmotion.com/",
+      "logo": "https://uxwithmotion.com/icon.png",
+      "sameAs": [
+        "https://instagram.com/uxwithmotion",
+      ],
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -65,6 +119,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body
         className={`${plusJakarta.variable} ${gcGudlak.variable} min-h-screen bg-[#FBFCFD] text-[#454545] font-sans`}
       >

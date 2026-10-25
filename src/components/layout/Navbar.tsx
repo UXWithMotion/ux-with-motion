@@ -206,12 +206,12 @@ export function Navbar({
           <Link
             href="/"
             className="flex items-center hover:opacity-90 transition-opacity"
-            aria-label="UX With Motion Home"
+            aria-label="uxwithmotion — UX With Motion"
           >
             <div className="relative w-[48.97px] h-[51px] shrink-0">
               <Image
                 src="/icons/logo.svg"
-                alt="Component Logo"
+                alt="uxwithmotion — UX With Motion Logo"
                 width={49}
                 height={51}
                 priority
@@ -341,12 +341,12 @@ export function Navbar({
         <Link
           href="/"
           className="flex items-center hover:opacity-90 transition-opacity"
-          aria-label="UX With Motion Home"
+          aria-label="uxwithmotion — UX With Motion"
         >
           <div className="relative w-[48.97px] h-[51px] shrink-0">
             <Image
               src="/icons/logo.svg"
-              alt="UX With Motion Logo"
+              alt="uxwithmotion — UX With Motion Logo"
               width={49}
               height={51}
               priority
