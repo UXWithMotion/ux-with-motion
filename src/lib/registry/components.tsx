@@ -25,6 +25,7 @@ import { ViewMoreEyeButton } from "@/components/motion-components/buttons/ViewMo
 import { ServicesIndicatorButton } from "@/components/motion-components/buttons/ServicesIndicatorButton";
 import { LiveSession } from "@/components/motion-components/LiveSession";
 import { LiveSessionInvite } from "@/components/motion-components/LiveSessionInvite";
+import { AiSearchToggle } from "@/components/motion-components/AiSearchToggle";
 
 export type ComponentRegistrySnippets = {
   html: string;
@@ -428,6 +429,243 @@ export function TabsButton() {
       html: `<button class="services-btn">Services Indicator</button>`,
       css: `.services-btn { /* styles */ }`,
       nextjs: `// React code for ServicesIndicatorButton`
+    }
+  },
+  "ai-search-toggle": {
+    registryId: "ai-search-toggle",
+    name: "AI Search Toggle",
+    category: "Inputs",
+    component: AiSearchToggle,
+    snippets: {
+      html: `<div class="ai-search-toggle">
+  <div class="search-card">
+    <div class="search-top-row">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search components" />
+      <div class="mode-toggle">
+        <button class="active">Search</button>
+        <button>Ask AI</button>
+      </div>
+    </div>
+  </div>
+</div>`,
+      css: `.ai-search-toggle {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.search-card {
+  position: relative;
+  border-radius: 9999px;
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+}`,
+      react: `"use client";
+
+import React, { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Search,
+  Wand2,
+  Plus,
+  Mic,
+  ArrowUp,
+  Image as ImageIcon,
+  Globe,
+  Wrench,
+  Check,
+} from "lucide-react";
+
+export function AiSearchToggle() {
+  const [mode, setMode] = useState<"search" | "ai">("search");
+  const [query, setQuery] = useState("");
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [activeTools, setActiveTools] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const isAi = mode === "ai";
+
+  const tools = [
+    { id: "generate-image", label: "Generate image", icon: ImageIcon },
+    { id: "web-search", label: "Web Search", icon: Globe },
+    { id: "tools", label: "Tools", icon: Wrench },
+  ];
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [mode]);
+
+  const toggleTool = (id: string) => {
+    setActiveTools((prev) =>
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+    );
+  };
+
+  return (
+    <div className="relative flex flex-col items-center justify-center p-4 w-full select-none">
+      <div className="relative flex flex-col items-center w-full max-w-[560px]">
+        {/* Animated Gradient Border */}
+        <motion.div
+          layout
+          animate={{ borderRadius: isAi ? 28 : 9999 }}
+          transition={{ type: "spring", stiffness: 220, damping: 24 }}
+          className="relative w-full p-[1.5px] overflow-hidden"
+          style={{
+            boxShadow: isAi
+              ? "0 10px 30px -4px rgba(56, 189, 248, 0.15), 0 4px 16px -2px rgba(192, 132, 252, 0.1)"
+              : "0 2px 10px rgba(0, 0, 0, 0.04)",
+          }}
+        >
+          {/* Moving Gradient Stroke */}
+          <motion.div
+            className="absolute -inset-[150%] pointer-events-none"
+            animate={{ opacity: isAi ? 1 : 0 }}
+            transition={{ duration: 0.45 }}
+          >
+            <div
+              className="w-full h-full"
+              style={{
+                background: "conic-gradient(from 0deg, #38BDF8 0%, #FB7185 25%, #C084FC 50%, #FBBF24 75%, #38BDF8 100%)",
+                animation: "spinGradient 4s linear infinite",
+              }}
+            />
+          </motion.div>
+
+          {/* Inner Content Card */}
+          <motion.div
+            layout
+            animate={{ borderRadius: isAi ? 26.5 : 9999 }}
+            transition={{ type: "spring", stiffness: 220, damping: 24 }}
+            className="relative w-full bg-white z-10 flex flex-col justify-between overflow-hidden"
+          >
+            {/* Top Row: Search Icon, Text Input, Mode Switch */}
+            <div className="flex items-center h-[58px] px-5 gap-3">
+              <div className="shrink-0 flex items-center justify-center text-[#525252]">
+                <Search className="w-5 h-5 stroke-[2.2]" />
+              </div>
+
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={isAi ? "Search sustainable products..." : "Search components"}
+                className="flex-1 bg-transparent border-none outline-none font-sans text-[15px] font-medium text-[#1F2123] placeholder:text-[#8E9196]"
+              />
+
+              {/* Mode Segmented Toggle: Search | Ask AI */}
+              <div className="shrink-0 relative flex items-center h-[42px] p-[3px] bg-[#F3F4F6] rounded-full">
+                {/* Sliding Background Indicator */}
+                <motion.div
+                  className="absolute top-[3px] bottom-[3px] rounded-full pointer-events-none"
+                  animate={{
+                    left: isAi ? "calc(50% + 1px)" : "3px",
+                    right: isAi ? "3px" : "calc(50% + 1px)",
+                    backgroundColor: isAi ? "#1F2123" : "#FDFDFD",
+                    boxShadow: isAi ? "0 2px 6px rgba(0, 0, 0, 0.2)" : "0 1px 3px rgba(0, 0, 0, 0.08)",
+                  }}
+                  transition={{ type: "spring", stiffness: 280, damping: 26 }}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setMode("search")}
+                  className={\`relative z-10 flex items-center justify-center px-4 h-full rounded-full text-[13px] font-medium transition-colors cursor-pointer \${
+                    !isAi ? "text-[#1F2123]" : "text-[#4B5563] hover:text-[#1F2123]"
+                  }\`}
+                >
+                  Search
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMode("ai")}
+                  className={\`relative z-10 flex items-center justify-center gap-1.5 px-4 h-full rounded-full text-[13px] font-medium transition-colors cursor-pointer \${
+                    isAi ? "text-white" : "text-[#4B5563] hover:text-[#1F2123]"
+                  }\`}
+                >
+                  {isAi && <Wand2 className="w-3.5 h-3.5 text-white" />}
+                  <span>Ask AI</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Row in Ask AI Variant */}
+            <AnimatePresence>
+              {isAi && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ type: "spring", stiffness: 240, damping: 24 }}
+                  className="flex items-center justify-between px-5 pb-3.5 pt-1 border-t border-transparent overflow-hidden"
+                >
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.96 }}
+                    onClick={() => setIsMoreOpen((prev) => !prev)}
+                    className={\`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all cursor-pointer \${
+                      isMoreOpen ? "bg-[#E5E7EB] text-[#1F2123]" : "bg-[#F3F4F6] text-[#4B5563]"
+                    }\`}
+                  >
+                    <Plus className="w-4 h-4 stroke-[2.2]" />
+                    <span>More</span>
+                  </motion.button>
+
+                  <div className="flex items-center gap-3">
+                    <button type="button" className="flex items-center justify-center w-8 h-8 rounded-full text-[#6B7280] hover:bg-black/5">
+                      <Mic className="w-4 h-4" />
+                    </button>
+                    <button type="button" className="flex items-center justify-center w-[36px] h-[36px] rounded-full bg-[#1F2123] text-white">
+                      <ArrowUp className="w-4 h-4 stroke-[2.5]" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </motion.div>
+
+        {/* Detached Menu Layer */}
+        <AnimatePresence>
+          {isAi && isMoreOpen && (
+            <motion.div
+              initial={{ y: -6, opacity: 0 }}
+              animate={{ y: 12, opacity: 1 }}
+              exit={{ y: -6, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 260, damping: 22 }}
+              className="absolute top-[138px] z-20 flex items-center gap-6 px-4 py-2.5 rounded-2xl bg-white/95 border border-[#E5E7EB] shadow-lg"
+            >
+              {tools.map((tool) => {
+                const Icon = tool.icon;
+                const isActive = activeTools.includes(tool.id);
+                return (
+                  <button
+                    key={tool.id}
+                    type="button"
+                    onClick={() => toggleTool(tool.id)}
+                    className={\`flex items-center gap-2 text-[13px] font-medium transition-colors cursor-pointer \${
+                      isActive ? "text-[#1F2123]" : "text-[#525252] hover:text-[#1F2123]"
+                    }\`}
+                  >
+                    <Icon className="w-4 h-4 stroke-[1.8] text-[#525252]" />
+                    <span>{tool.label}</span>
+                    {isActive && <Check className="w-3 h-3 text-[#1F2123] stroke-[2.5]" />}
+                  </button>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}`
     }
   }
 };

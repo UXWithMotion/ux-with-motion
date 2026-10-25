@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import localFont from "next/font/local";
-import NextTopLoader from 'nextjs-toploader';
+import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 import { CustomizationProvider } from "@/components/providers/CustomizationProvider";
 
@@ -30,42 +30,66 @@ const gcGudlak = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.uxwithmotion.com"),
   title: {
-    default: "uxwithmotion — UX With Motion | Crafted UI Components",
-    template: "%s | uxwithmotion — UX With Motion",
+    default: "UX With Motion (uxwithmotion) — Animated UI Components for Figma & React",
+    template: "%s | UX With Motion",
   },
   description:
-    "Explore 50+ animated UI components by UX With Motion (uxwithmotion). Copy-paste interactive buttons, badges, and micro-interactions for Figma and React.",
+    "Explore 50+ copy-paste animated UI components, interactive buttons, badges, and design system micro-interactions built for Figma, React, Next.js, and Tailwind CSS.",
   keywords: [
+    "ux with motion",
     "uxwithmotion",
-    "UX With Motion",
-    "UXWithMotion",
-    "animated UI components",
-    "micro-interactions",
-    "React motion components",
-    "Framer Motion",
-    "Figma UI components",
-    "interactive buttons",
+    "animated ui components",
+    "best button components",
+    "design system based components",
+    "animation component",
+    "figma to react animated components",
+    "interactive button component react",
+    "framer motion ui library",
+    "micro-interaction components",
+    "copy paste ui components",
+    "Sahil Pandavadara",
   ],
+  authors: [{ name: "Sahil Pandavadara", url: "https://x.com/gfxwithsahil" }],
+  creator: "Sahil Pandavadara",
+  publisher: "UX With Motion",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "uxwithmotion — UX With Motion | Crafted UI Components",
-    description:
-      "Explore 50+ animated UI components by UX With Motion (uxwithmotion). Copy-paste interactive buttons, badges, and micro-interactions for Figma and React.",
-    url: "https://www.uxwithmotion.com",
-    siteName: "uxwithmotion — UX With Motion",
     type: "website",
+    locale: "en_US",
+    url: "https://www.uxwithmotion.com",
+    siteName: "UX With Motion",
+    title: "UX With Motion — 50+ Animated UI Components for Figma & React",
+    description:
+      "Copy-paste interactive buttons, badges, and design system micro-interactions for Figma and React.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "UX With Motion - Crafted UI Components",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "uxwithmotion — UX With Motion | Crafted UI Components",
+    title: "UX With Motion — Animated UI Components for Figma & React",
     description:
-      "Explore 50+ animated UI components by UX With Motion (uxwithmotion). Copy-paste interactive buttons, badges, and micro-interactions for Figma and React.",
+      "Explore 50+ animated UI components. Copy-paste interactive buttons, badges, and micro-interactions for Figma and React.",
+    creator: "@gfxwithsahil",
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
   icons: {
     icon: [
@@ -93,20 +117,35 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "WebSite",
-      "name": "uxwithmotion",
-      "alternateName": ["UX With Motion", "UXWithMotion"],
-      "url": "https://www.uxwithmotion.com/",
+      "@id": "https://www.uxwithmotion.com/#website",
+      "url": "https://www.uxwithmotion.com",
+      "name": "UX With Motion",
+      "alternateName": ["uxwithmotion", "UXWithMotion", "UX With Motion UI"],
       "description":
-        "Explore 50+ animated UI components by UX With Motion (uxwithmotion). Copy-paste interactive buttons, badges, and micro-interactions for Figma and React.",
+        "50+ Animated UI Components and Design System Micro-Interactions for Figma and React.",
+      "publisher": {
+        "@id": "https://www.uxwithmotion.com/#organization",
+      },
     },
     {
       "@type": "Organization",
+      "@id": "https://www.uxwithmotion.com/#organization",
       "name": "UX With Motion",
       "alternateName": "uxwithmotion",
-      "url": "https://www.uxwithmotion.com/",
-      "logo": "https://www.uxwithmotion.com/icon.png",
+      "url": "https://www.uxwithmotion.com",
+      "logo": "https://www.uxwithmotion.com/logo.png",
+      "founder": {
+        "@type": "Person",
+        "name": "Sahil Pandavadara",
+        "url": "https://x.com/gfxwithsahil",
+        "sameAs": [
+          "https://x.com/gfxwithsahil",
+          "https://www.instagram.com/uxwithmotion",
+        ],
+      },
       "sameAs": [
-        "https://instagram.com/uxwithmotion",
+        "https://www.instagram.com/uxwithmotion",
+        "https://x.com/gfxwithsahil",
       ],
     },
   ],
@@ -138,10 +177,7 @@ export default function RootLayout({
           strategy="afterInteractive"
           src="https://www.googletagmanager.com/gtag/js?id=G-W20DFBH7L3"
         />
-        <Script
-          id="google-analytics"
-          strategy="afterInteractive"
-        >
+        <Script id="google-analytics" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -151,9 +187,7 @@ export default function RootLayout({
           `}
         </Script>
         <NextTopLoader showSpinner={false} color="#000000" />
-        <CustomizationProvider>
-          {children}
-        </CustomizationProvider>
+        <CustomizationProvider>{children}</CustomizationProvider>
       </body>
     </html>
   );
