@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { getPublishedComponents } from "@/lib/admin/components/queries";
 import { ComponentsExplorer } from "./ComponentsExplorer";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "Components",
   description:

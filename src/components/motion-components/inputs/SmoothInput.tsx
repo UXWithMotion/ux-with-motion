@@ -13,6 +13,100 @@ import { motion, AnimatePresence } from "framer-motion";
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
+// ─── Figma iOS 100% Corner Smoothing (Squircle) Math ─────────────────────────
+
+function toRadians(degrees: number) {
+  return (degrees * Math.PI) / 180;
+}
+
+interface CornerParams {
+  cornerRadius: number;
+  cornerSmoothing: number;
+  roundingAndSmoothingBudget: number;
+}
+
+function getPathParamsForCorner({
+  cornerRadius,
+  cornerSmoothing,
+  roundingAndSmoothingBudget,
+}: CornerParams) {
+  let p = (1 + cornerSmoothing) * cornerRadius;
+  const maxCornerSmoothing = roundingAndSmoothingBudget / cornerRadius - 1;
+  cornerSmoothing = Math.min(cornerSmoothing, maxCornerSmoothing);
+  p = Math.min(p, roundingAndSmoothingBudget);
+
+  const arcMeasure = 90 * (1 - cornerSmoothing);
+  const arcSectionLength =
+    Math.sin(toRadians(arcMeasure / 2)) * cornerRadius * Math.sqrt(2);
+  const angleAlpha = (90 - arcMeasure) / 2;
+  const p3ToP4Distance = cornerRadius * Math.tan(toRadians(angleAlpha / 2));
+  const angleBeta = 45 * cornerSmoothing;
+  const c = p3ToP4Distance * Math.cos(toRadians(angleBeta));
+  const d = c * Math.tan(toRadians(angleBeta));
+  const b = (p - arcSectionLength - c - d) / 3;
+  const a = 2 * b;
+
+  return { a, b, c, d, p, arcSectionLength, cornerRadius };
+}
+
+export function getSquirclePath(
+  width: number,
+  height: number,
+  cornerRadius = 12,
+  cornerSmoothing = 1.0,
+  inset = 0.5
+) {
+  const w = width - inset * 2;
+  const h = height - inset * 2;
+  const budget = Math.min(w, h) / 2;
+  const r = Math.min(Math.max(cornerRadius - inset, 0), budget);
+  const p = getPathParamsForCorner({
+    cornerRadius: r,
+    cornerSmoothing,
+    roundingAndSmoothingBudget: budget,
+  });
+
+  const a = p.a.toFixed(3);
+  const b = p.b.toFixed(3);
+  const c = p.c.toFixed(3);
+  const d = p.d.toFixed(3);
+  const arc = p.arcSectionLength.toFixed(3);
+  const apb = (p.a + p.b).toFixed(3);
+  const apbpc = (p.a + p.b + p.c).toFixed(3);
+  const bpc = (p.b + p.c).toFixed(3);
+
+  const startX = (w - p.p + inset).toFixed(3);
+  const startY = inset.toFixed(3);
+  const rightX = (w + inset).toFixed(3);
+  const bottomY = (h + inset).toFixed(3);
+  const leftX = inset.toFixed(3);
+  const bottomStartX = (h - p.p + inset).toFixed(3);
+  const leftBottomX = (p.p + inset).toFixed(3);
+  const leftTopY = (p.p + inset).toFixed(3);
+
+  return (
+    `M ${startX} ${startY} ` +
+    `c ${a} 0 ${apb} 0 ${apbpc} ${d} ` +
+    `a ${r} ${r} 0 0 1 ${arc} ${arc} ` +
+    `c ${d} ${c} ${d} ${bpc} ${d} ${apbpc} ` +
+    `L ${rightX} ${bottomStartX} ` +
+    `c 0 ${a} 0 ${apb} -${d} ${apbpc} ` +
+    `a ${r} ${r} 0 0 1 -${arc} ${arc} ` +
+    `c -${c} ${d} -${bpc} ${d} -${apbpc} ${d} ` +
+    `L ${leftBottomX} ${bottomY} ` +
+    `c -${a} 0 -${apb} 0 -${apbpc} -${d} ` +
+    `a ${r} ${r} 0 0 1 -${arc} -${arc} ` +
+    `c -${d} -${c} -${d} -${bpc} -${d} -${apbpc} ` +
+    `L ${leftX} ${leftTopY} ` +
+    `c 0 -${a} 0 -${apb} ${d} -${apbpc} ` +
+    `a ${r} ${r} 0 0 1 ${arc} -${arc} ` +
+    `c ${c} -${d} ${bpc} -${d} ${apbpc} -${d} ` +
+    `Z`
+  );
+}
+
+// ─── Component Props ─────────────────────────────────────────────────────────
+
 export interface SmoothInputProps {
   className?: string;
   property1?: "Field anatomy" | "Input container";
@@ -44,9 +138,12 @@ export function SmoothInput({
 }: SmoothInputProps) {
   const generatedId = useId();
   const inputId = id || generatedId;
+  const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const displayRef = useRef<HTMLDivElement>(null);
   const isSimulatingRef = useRef(false);
+
+  const [containerWidth, setContainerWidth] = useState(404);
 
   // Initialize value based on Figma property1 variant or defaultValue
   const initialValue =
@@ -68,6 +165,28 @@ export function SmoothInput({
   const [caretX, setCaretX] = useState(16);
   const [hasSelection, setHasSelection] = useState(false);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ResizeObserver for dynamic iOS squircle corner smoothing
+  useIsomorphicLayoutEffect(() => {
+    if (!containerRef.current) return;
+    const updateSize = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth || 404);
+      }
+    };
+    updateSize();
+    const ro = new ResizeObserver(updateSize);
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  // Compute Figma iOS 100% Corner Smoothing Squircle Paths
+  const { strokePath, clipPath } = useMemo(() => {
+    return {
+      strokePath: getSquirclePath(containerWidth, 60, 12, 1.0, 0.5),
+      clipPath: getSquirclePath(containerWidth, 60, 12, 1.0, 0),
+    };
+  }, [containerWidth]);
 
   // Sync when property1 or controlled value changes
   useEffect(() => {
@@ -199,24 +318,40 @@ export function SmoothInput({
     <div className={`relative flex items-center justify-center w-full p-4 select-none ${className}`}>
       {/* 
         Container matching Figma Node 2126:2118:
-        w-[404px], h-[60px], rounded-[12px], bg-white
+        w-[404px], h-[60px], with iOS 100% Corner Smoothing (Squircle)
       */}
-      <motion.div
-        initial={false}
-        animate={{
-          borderColor: isFocused
-            ? "#626467"
-            : isHovered
-            ? "#b0b7c3"
-            : "#d8dee9",
-          boxShadow: "none",
-        }}
-        transition={{ duration: 0.2 }}
+      <div
+        ref={containerRef}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onClick={() => inputRef.current?.focus()}
-        className="relative w-full max-w-[404px] h-[60px] bg-white rounded-[12px] border border-solid overflow-hidden cursor-text transition-colors duration-200"
+        className="relative w-full max-w-[404px] h-[60px] cursor-text select-none"
+        style={{
+          clipPath: `path('${clipPath}')`,
+        }}
       >
+        {/* iOS 100% Corner Smoothing Squircle Background & 1px Stroke */}
+        <svg
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full pointer-events-none z-0 overflow-visible"
+          viewBox={`0 0 ${containerWidth} 60`}
+          fill="none"
+        >
+          <path
+            d={strokePath}
+            fill="#FFFFFF"
+            stroke={
+              isFocused
+                ? "#626467"
+                : isHovered
+                ? "#b0b7c3"
+                : "#d8dee9"
+            }
+            strokeWidth="1"
+            className="transition-colors duration-200"
+          />
+        </svg>
+
         {/* Floating Animated Label */}
         <motion.label
           htmlFor={inputId}
@@ -237,7 +372,6 @@ export function SmoothInput({
         >
           {label}
         </motion.label>
-
 
         {/* 
           Smooth Typing Display Layer:
@@ -431,7 +565,7 @@ export function SmoothInput({
             )}
           </AnimatePresence>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

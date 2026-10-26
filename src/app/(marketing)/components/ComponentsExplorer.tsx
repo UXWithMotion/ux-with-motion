@@ -59,6 +59,22 @@ export function ComponentsExplorer({
     }
   }, []);
 
+  // Sync components whenever server supplies new initialComponents (e.g. after revalidation)
+  useEffect(() => {
+    if (initialComponents && initialComponents.length > 0) {
+      setComponents(initialComponents);
+    }
+  }, [initialComponents]);
+
+  // Refresh live components whenever the user returns to this window/tab
+  useEffect(() => {
+    const handleFocus = () => {
+      void refreshComponents();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [refreshComponents]);
+
   // Load components client-side if not supplied initially
   useEffect(() => {
     const init = async () => {

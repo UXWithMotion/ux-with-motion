@@ -1,13 +1,14 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { requireAdmin } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { componentRegistry } from "@/lib/registry/components";
 
 export async function createComponent(data: any) {
   await requireAdmin();
-  const supabase = await createClient();
+  const supabase = createServiceRoleClient();
   
   const { data: existing, error: checkError } = await supabase
     .from("components")
@@ -58,7 +59,7 @@ export async function createComponent(data: any) {
 
 export async function updateComponent(id: string, data: any) {
   await requireAdmin();
-  const supabase = await createClient();
+  const supabase = createServiceRoleClient();
   
   const { data: existing, error: existingError } = await supabase
     .from("components")
@@ -129,7 +130,7 @@ export async function archiveComponent(id: string) {
 
 export async function deleteComponent(id: string) {
   await requireAdmin();
-  const supabase = await createClient();
+  const supabase = createServiceRoleClient();
   const { error } = await supabase.from("components").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/components");
@@ -139,14 +140,53 @@ export async function deleteComponent(id: string) {
 
 export async function updateComponentsOrder(updates: {id: string, order: number}[]) {
   await requireAdmin();
-  const supabase = await createClient();
+  const supabase = createServiceRoleClient();
   
-  for (const update of updates) {
-    const { error } = await supabase.from("components").update({ order: update.order }).eq("id", update.id);
-    if (error) throw new Error(error.message);
-  }
+  await Promise.all(
+    updates.map(async (u) => {
+      const { error } = await supabase
+        .from("components")
+        .update({ order: u.order, updated_at: new Date().toISOString() })
+        .eq("id", u.id);
+      if (error) throw new Error(`Failed to update order for ${u.id}: ${error.message}`);
+    })
+  );
   
   revalidatePath("/components");
+  revalidatePath("/components", "page");
   revalidatePath("/admin/components");
+  revalidatePath("/admin/components", "page");
+  return { success: true };
+}
+
+export async function resetComponentsToDefaultOrder() {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  const { data: allComponents, error: fetchErr } = await supabase
+    .from("components")
+    .select("id, created_at")
+    .order("created_at", { ascending: false });
+
+  if (fetchErr) {
+    throw new Error(`Failed to fetch components: ${fetchErr.message}`);
+  }
+
+  if (allComponents && allComponents.length > 0) {
+    await Promise.all(
+      allComponents.map(async (comp, i) => {
+        const { error } = await supabase
+          .from("components")
+          .update({ order: i, updated_at: new Date().toISOString() })
+          .eq("id", comp.id);
+        if (error) throw new Error(`Failed to update order for ${comp.id}: ${error.message}`);
+      })
+    );
+  }
+
+  revalidatePath("/components");
+  revalidatePath("/components", "page");
+  revalidatePath("/admin/components");
+  revalidatePath("/admin/components", "page");
   return { success: true };
 }

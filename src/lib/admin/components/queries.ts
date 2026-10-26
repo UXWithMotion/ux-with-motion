@@ -1,11 +1,12 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { requireAdmin } from "@/lib/supabase/admin";
 
 export async function getAdminComponents() {
   await requireAdmin();
-  const supabase = await createClient();
+  const supabase = createServiceRoleClient();
   
   const { data, error } = await supabase
     .from("components")
@@ -22,7 +23,7 @@ export async function getAdminComponents() {
 
 export async function getAdminComponent(id: string) {
   await requireAdmin();
-  const supabase = await createClient();
+  const supabase = createServiceRoleClient();
   
   const { data, error } = await supabase
     .from("components")

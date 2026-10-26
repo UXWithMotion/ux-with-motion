@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Play, Edit, Trash2, ArrowLeft, ArrowRight, X } from "lucide-react";
+import { Play, Edit, Trash2, ArrowLeft, ArrowRight, X, RotateCcw } from "lucide-react";
 import { getAdminComponents } from "@/lib/admin/components/queries";
-import { deleteComponent, updateComponentsOrder } from "@/lib/admin/components/mutations";
+import { deleteComponent, updateComponentsOrder, resetComponentsToDefaultOrder } from "@/lib/admin/components/mutations";
 import { componentRegistry } from "@/lib/registry/components";
 import { ComponentCard } from "@/components/ui/ComponentCard";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
@@ -14,6 +14,8 @@ export default function AdminComponentsPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState("");
   const [componentToDelete, setComponentToDelete] = useState<any>(null);
+  const [isReordering, setIsReordering] = useState(false);
+  const [orderNotice, setOrderNotice] = useState("");
 
   useEffect(() => {
     async function loadComponents() {
@@ -54,10 +56,39 @@ export default function AdminComponentsPage() {
     const updates = newComponents.map((c, i) => ({ id: c.id, order: i }));
     try {
       await updateComponentsOrder(updates);
+      setOrderNotice(`Moved "${temp.title}" to #${newIndex + 1}`);
+      setTimeout(() => setOrderNotice(""), 2500);
     } catch (err: any) {
       alert("Failed to update order: " + err.message);
       const data = await getAdminComponents();
       setComponents(data || []);
+    }
+  };
+
+  const handleResetToDefault = async () => {
+    if (isReordering) return;
+    setIsReordering(true);
+    setOrderNotice("");
+
+    // Sort Newest to Oldest by created_at DESC
+    const sorted = [...components].sort((a, b) => {
+      const timeA = new Date(a.created_at || 0).getTime();
+      const timeB = new Date(b.created_at || 0).getTime();
+      return timeB - timeA;
+    });
+
+    setComponents(sorted);
+
+    try {
+      await resetComponentsToDefaultOrder();
+      setOrderNotice("Order reset: Newest to Oldest");
+      setTimeout(() => setOrderNotice(""), 3500);
+    } catch (err: any) {
+      alert("Failed to reset order: " + err.message);
+      const data = await getAdminComponents();
+      setComponents(data || []);
+    } finally {
+      setIsReordering(false);
     }
   };
 
@@ -66,14 +97,33 @@ export default function AdminComponentsPage() {
   return (
     <div className="flex flex-col h-full bg-[#F7F9FB] relative">
       <header className="h-[63px] bg-[#FBFCFD] border-b border-[#DEE1E4] px-8 flex items-center justify-between shrink-0">
-        <h1 className="text-xl font-bold text-[#454545]">Components</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold text-[#454545]">Components</h1>
+          {orderNotice && (
+            <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full animate-in fade-in duration-200">
+              {orderNotice}
+            </span>
+          )}
+        </div>
         {components.length > 0 && (
-          <Link
-            href="/admin/components/create"
-            className="bg-[#1F2123] text-white px-5 py-2.5 rounded-[44px] text-sm font-medium transition-opacity hover:opacity-90"
-          >
-            Create component
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleResetToDefault}
+              disabled={isReordering}
+              className="bg-[#FBFCFD] border border-[#DEE1E4] hover:bg-[#EEF1F4] text-[#454545] px-4 py-2 rounded-[44px] text-sm font-medium transition-colors flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
+              title="Reset order to default (Newest to Oldest)"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 text-[#7D7F82] ${isReordering ? "animate-spin" : ""}`} />
+              <span>Default (Newest)</span>
+            </button>
+            <Link
+              href="/admin/components/create"
+              className="bg-[#1F2123] text-white px-5 py-2.5 rounded-[44px] text-sm font-medium transition-opacity hover:opacity-90"
+            >
+              Create component
+            </Link>
+          </div>
         )}
       </header>
 
@@ -116,24 +166,29 @@ export default function AdminComponentsPage() {
                         </p>
                       </div>
                       
-                      {/* Order Controls */}
-                      <div className="flex bg-[#F7F9FB] rounded-[6px] border border-[#DEE1E4] overflow-hidden ml-2">
-                        <button 
-                          onClick={() => moveComponent(index, -1)}
-                          disabled={index === 0}
-                          className="p-1 hover:bg-[#EEF1F4] disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-r border-[#DEE1E4]"
-                          title="Move Earlier"
-                        >
-                          <ArrowLeft className="w-4 h-4 text-[#454545]" />
-                        </button>
-                        <button 
-                          onClick={() => moveComponent(index, 1)}
-                          disabled={index === components.length - 1}
-                          className="p-1 hover:bg-[#EEF1F4] disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                          title="Move Later"
-                        >
-                          <ArrowRight className="w-4 h-4 text-[#454545]" />
-                        </button>
+                      {/* Order Controls with Position Badge */}
+                      <div className="flex items-center gap-1.5 ml-1.5">
+                        <span className="text-[11px] font-mono font-semibold text-[#454545] bg-[#EEF1F4] px-1.5 py-0.5 rounded-[4px] border border-[#DEE1E4]" title={`Live position #${index + 1}`}>
+                          #{index + 1}
+                        </span>
+                        <div className="flex bg-[#F7F9FB] rounded-[6px] border border-[#DEE1E4] overflow-hidden">
+                          <button 
+                            onClick={() => moveComponent(index, -1)}
+                            disabled={index === 0}
+                            className="p-1 hover:bg-[#EEF1F4] disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-r border-[#DEE1E4] cursor-pointer"
+                            title="Move Earlier"
+                          >
+                            <ArrowLeft className="w-4 h-4 text-[#454545]" />
+                          </button>
+                          <button 
+                            onClick={() => moveComponent(index, 1)}
+                            disabled={index === components.length - 1}
+                            className="p-1 hover:bg-[#EEF1F4] disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                            title="Move Later"
+                          >
+                            <ArrowRight className="w-4 h-4 text-[#454545]" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                     
