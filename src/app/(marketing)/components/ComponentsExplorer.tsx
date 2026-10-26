@@ -174,6 +174,45 @@ export function ComponentsExplorer({
     return searchTerms.every((term) => searchableText.includes(term));
   });
 
+  const [columns, setColumns] = useState(3);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+    const updateColumns = () => {
+      const width = window.innerWidth;
+      if (width < 768) {
+        setColumns(1);
+      } else if (width < 1024) {
+        setColumns(2);
+      } else {
+        setColumns(3);
+      }
+    };
+
+    updateColumns();
+    window.addEventListener("resize", updateColumns);
+    return () => window.removeEventListener("resize", updateColumns);
+  }, []);
+
+  const effectiveColumns = hasMounted ? columns : 3;
+
+  const columnItems = useMemo(() => {
+    const cols: ComponentItem[][] = Array.from({ length: effectiveColumns }, () => []);
+    filteredComponents.forEach((comp, idx) => {
+      cols[idx % effectiveColumns].push(comp);
+    });
+    return cols;
+  }, [filteredComponents, effectiveColumns]);
+
+  const skeletonCols = useMemo(() => {
+    const cols = Array.from({ length: effectiveColumns }, () => [] as number[]);
+    for (let i = 0; i < 6; i++) {
+      cols[i % effectiveColumns].push(i);
+    }
+    return cols;
+  }, [effectiveColumns]);
+
   const toggleSave = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -207,6 +246,114 @@ export function ComponentsExplorer({
     }
   };
 
+  const renderCard = (comp: ComponentItem) => {
+    const isSaved = savedIds.includes(comp.id);
+    const componentSlug = comp.registry_id || comp.id;
+
+    return (
+      <Link
+        key={comp.id}
+        href={`/components/${componentSlug}`}
+        onClick={(e) => handleCardClick(e, comp)}
+        className="bg-[#F7F9FB] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip group cursor-pointer min-h-[251px] h-auto block text-inherit no-underline transition-shadow hover:shadow-xs"
+      >
+        {/* Top action bar */}
+        <div className="flex items-center justify-between p-[8px] w-full shrink-0 relative z-10 bg-transparent min-h-[50px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="flex items-center" />
+          <div className="flex gap-[6px] items-center">
+            <button
+              type="button"
+              onClick={(e) => toggleSave(e, comp.id)}
+              className={`flex items-center justify-center size-[34px] transition-colors ${
+                isSaved ? "text-[#454545]" : "text-[#B0B0B0] hover:text-black"
+              }`}
+              aria-label={isSaved ? "Saved" : "Bookmark"}
+            >
+              <Bookmark
+                size={20}
+                className={
+                  isSaved
+                    ? "fill-current stroke-current"
+                    : "fill-transparent stroke-current stroke-2"
+                }
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Component Display Area */}
+        <div className="relative w-full flex-1 flex items-center justify-center bg-transparent pointer-events-auto z-0 min-h-[151px] py-3 px-2 overflow-hidden">
+          <div className="w-full transform flex items-center justify-center scale-[0.9]">
+            {(() => {
+              const overrides = getOverrides(comp.id);
+              const activeOverrides: Record<string, string> = {};
+              const schemaDefToUse =
+                comp.schema_definition && comp.schema_definition.length > 0
+                  ? comp.schema_definition
+                  : componentRegistry[comp.registry_id]?.schema_definition || [];
+
+              schemaDefToUse.forEach((config: { variable: string; defaultValue?: string }) => {
+                const val =
+                  overrides[config.variable] !== undefined
+                    ? overrides[config.variable]
+                    : config.defaultValue;
+                if (config.variable && val !== undefined) {
+                  activeOverrides[config.variable] = val;
+                }
+              });
+
+              const RegistryComponent = componentRegistry[comp.registry_id]?.component;
+              if (RegistryComponent) {
+                return (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={activeOverrides as React.CSSProperties}
+                    className="w-full flex items-center justify-center"
+                  >
+                    <RegistryComponent />
+                  </div>
+                );
+              }
+
+              const hasHtmlCss = comp.snippets?.html || comp.snippets?.css;
+              if (hasHtmlCss && comp.source_type !== "react") {
+                return (
+                  <div className="w-[150%] h-[150%]">
+                    <LivePreviewIframe
+                      sourceType={
+                        (comp.source_type as "react" | "html_css" | "both") || "html_css"
+                      }
+                      snippets={comp.snippets || {}}
+                      schemaDefinition={comp.schema_definition}
+                      overrides={activeOverrides}
+                      className="w-full h-full border-none scale-[0.9] origin-center"
+                    />
+                  </div>
+                );
+              }
+
+              return (
+                <div className="text-[#7D7F82] font-medium text-sm flex flex-col items-center gap-1">
+                  <span>Preview Unavailable</span>
+                  <span className="text-[10px]">Missing trusted registry renderer</span>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+
+        {/* Footer Area */}
+        <div className="flex items-center justify-between px-[20px] py-[12px] w-full shrink-0 relative z-10 bg-transparent h-[48px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-auto">
+          <div className="flex items-center gap-2 max-w-[100%]">
+            <h3 className="font-sans font-medium text-[20px] leading-[1.2] text-[#454545] whitespace-nowrap truncate">
+              {comp.title}
+            </h3>
+          </div>
+        </div>
+      </Link>
+    );
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#FBFCFD] pb-32">
       <div className="w-full px-6 lg:px-[70px] pt-8">
@@ -226,25 +373,29 @@ export function ComponentsExplorer({
         )}
 
         {!isLoaded ? (
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-[24px] w-full">
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-[#F7F9FB] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip min-h-[253px] break-inside-avoid mb-[24px]"
-              >
-                <div className="flex items-center justify-between p-[8px] w-full shrink-0 relative z-10 min-h-[50px]">
-                  <div className="w-[50px] h-[20px] bg-[#E5E7EB] rounded-full animate-pulse ml-1" />
-                  <div className="flex gap-[6px] items-center">
-                    <div className="size-[34px] bg-[#E5E7EB] rounded-[6px] animate-pulse" />
-                    <div className="size-[34px] bg-[#E5E7EB] rounded-[6px] animate-pulse" />
+          <div className="flex gap-[24px] w-full items-start">
+            {skeletonCols.map((col, colIdx) => (
+              <div key={colIdx} className="flex flex-col gap-[24px] flex-1 min-w-0">
+                {col.map((i) => (
+                  <div
+                    key={i}
+                    className="bg-[#F7F9FB] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip min-h-[253px]"
+                  >
+                    <div className="flex items-center justify-between p-[8px] w-full shrink-0 relative z-10 min-h-[50px]">
+                      <div className="w-[50px] h-[20px] bg-[#E5E7EB] rounded-full animate-pulse ml-1" />
+                      <div className="flex gap-[6px] items-center">
+                        <div className="size-[34px] bg-[#E5E7EB] rounded-[6px] animate-pulse" />
+                        <div className="size-[34px] bg-[#E5E7EB] rounded-[6px] animate-pulse" />
+                      </div>
+                    </div>
+                    <div className="h-[151px] w-full relative flex items-center justify-center shrink-0 overflow-hidden">
+                      <div className="w-[120px] h-[40px] bg-[#E5E7EB] rounded-[8px] animate-pulse" />
+                    </div>
+                    <div className="flex items-center p-[16px] w-full shrink-0 mt-auto border-t border-[#DEE1E4]">
+                      <div className="w-[120px] h-[20px] bg-[#E5E7EB] rounded-[4px] animate-pulse" />
+                    </div>
                   </div>
-                </div>
-                <div className="h-[151px] w-full relative flex items-center justify-center shrink-0 overflow-hidden">
-                  <div className="w-[120px] h-[40px] bg-[#E5E7EB] rounded-[8px] animate-pulse" />
-                </div>
-                <div className="flex items-center p-[16px] w-full shrink-0 mt-auto border-t border-[#DEE1E4]">
-                  <div className="w-[120px] h-[20px] bg-[#E5E7EB] rounded-[4px] animate-pulse" />
-                </div>
+                ))}
               </div>
             ))}
           </div>
@@ -266,114 +417,12 @@ export function ComponentsExplorer({
             )}
           </div>
         ) : (
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-[24px] w-full">
-            {filteredComponents.map((comp) => {
-              const isSaved = savedIds.includes(comp.id);
-              const componentSlug = comp.registry_id || comp.id;
-
-              return (
-                <Link
-                  key={comp.id}
-                  href={`/components/${componentSlug}`}
-                  onClick={(e) => handleCardClick(e, comp)}
-                  className="bg-[#F7F9FB] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip group cursor-pointer break-inside-avoid mb-[24px] min-h-[251px] block text-inherit no-underline"
-                >
-                  {/* Top action bar */}
-                  <div className="flex items-center justify-between p-[8px] w-full shrink-0 relative z-10 bg-transparent min-h-[50px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <div className="flex items-center" />
-                    <div className="flex gap-[6px] items-center">
-                      <button
-                        type="button"
-                        onClick={(e) => toggleSave(e, comp.id)}
-                        className={`flex items-center justify-center size-[34px] transition-colors ${
-                          isSaved ? "text-[#454545]" : "text-[#B0B0B0] hover:text-black"
-                        }`}
-                        aria-label={isSaved ? "Saved" : "Bookmark"}
-                      >
-                        <Bookmark
-                          size={20}
-                          className={
-                            isSaved
-                              ? "fill-current stroke-current"
-                              : "fill-transparent stroke-current stroke-2"
-                          }
-                        />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Component Display Area */}
-                  <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden bg-transparent pointer-events-auto z-0">
-                    <div className="w-full h-full transform flex items-center justify-center scale-[0.9]">
-                      {(() => {
-                        const overrides = getOverrides(comp.id);
-                        const activeOverrides: Record<string, string> = {};
-                        const schemaDefToUse =
-                          comp.schema_definition && comp.schema_definition.length > 0
-                            ? comp.schema_definition
-                            : componentRegistry[comp.registry_id]?.schema_definition || [];
-
-                        schemaDefToUse.forEach((config: { variable: string; defaultValue?: string }) => {
-                          const val =
-                            overrides[config.variable] !== undefined
-                              ? overrides[config.variable]
-                              : config.defaultValue;
-                          if (config.variable && val !== undefined) {
-                            activeOverrides[config.variable] = val;
-                          }
-                        });
-
-                        const RegistryComponent = componentRegistry[comp.registry_id]?.component;
-                        if (RegistryComponent) {
-                          return (
-                            <div
-                              onClick={(e) => e.stopPropagation()}
-                              style={activeOverrides as React.CSSProperties}
-                              className="w-full h-full flex items-center justify-center"
-                            >
-                              <RegistryComponent />
-                            </div>
-                          );
-                        }
-
-                        const hasHtmlCss = comp.snippets?.html || comp.snippets?.css;
-                        if (hasHtmlCss && comp.source_type !== "react") {
-                          return (
-                            <div className="w-[150%] h-[150%]">
-                              <LivePreviewIframe
-                                sourceType={
-                                  (comp.source_type as "react" | "html_css" | "both") || "html_css"
-                                }
-                                snippets={comp.snippets || {}}
-                                schemaDefinition={comp.schema_definition}
-                                overrides={activeOverrides}
-                                className="w-full h-full border-none scale-[0.9] origin-center"
-                              />
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div className="text-[#7D7F82] font-medium text-sm flex flex-col items-center gap-1">
-                            <span>Preview Unavailable</span>
-                            <span className="text-[10px]">Missing trusted registry renderer</span>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* Footer Area */}
-                  <div className="flex items-center justify-between px-[20px] py-[12px] w-full shrink-0 relative z-10 bg-transparent h-[48px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-auto">
-                    <div className="flex items-center gap-2 max-w-[100%]">
-                      <h3 className="font-sans font-medium text-[20px] leading-[1.2] text-[#454545] whitespace-nowrap truncate">
-                        {comp.title}
-                      </h3>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+          <div className="flex gap-[24px] w-full items-start">
+            {columnItems.map((col, colIdx) => (
+              <div key={colIdx} className="flex flex-col gap-[24px] flex-1 min-w-0">
+                {col.map((comp) => renderCard(comp))}
+              </div>
+            ))}
           </div>
         )}
       </div>

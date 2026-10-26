@@ -353,7 +353,7 @@ export function SmoothInput({
         </svg>
 
         {/* Floating Animated Label */}
-        <motion.label
+        <motion.label  
           htmlFor={inputId}
           initial={false}
           animate={{
