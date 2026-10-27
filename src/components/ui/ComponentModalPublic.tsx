@@ -237,21 +237,10 @@ export function ComponentModalPublic({
                           );
                         }
 
-                        const hasCustomization = Object.keys(activeOverrides).length > 0;
                         const codeToCopy = nextjsCode;
 
                         return (
                           <div className="flex flex-col gap-4">
-                            {hasCustomization && (
-                              <div className="bg-[#FDF8F0] border border-[#F3E2C6] rounded-[8px] p-4 flex items-start gap-3">
-                                <span className="text-[#C18824] shrink-0 text-lg">💡</span>
-                                <p className="text-[#A0701C] text-[13px] leading-relaxed">
-                                  <strong>Customization applied via CSS variables.</strong> The Next.js code below is the authoritative structural source. 
-                                  To use your customizations, apply the CSS variables to the component&apos;s container in your global CSS.
-                                </p>
-                              </div>
-                            )}
-                            
                             <div className="relative group">
                               <div className="absolute top-4 right-4 flex items-center">
                                 <button
