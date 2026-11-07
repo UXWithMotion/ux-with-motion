@@ -384,8 +384,8 @@ export function SmoothEmailInput({
           htmlFor={inputId}
           initial={false}
           animate={{
-            y: isFloating ? -9 : 0,
-            scale: isFloating ? 0.857 : 1, // 14px * 0.857 ≈ 12px (in Figma: top shifts from 20.5px to 11.5px)
+            y: isFloating ? 11.5 : 23,
+            scale: isFloating ? 0.857 : 1, // 14px * 0.857 ≈ 12px (in Figma: top shifts from 23px to 11.5px)
             color: showError
               ? "#F04438"
               : isFocused
@@ -399,7 +399,7 @@ export function SmoothEmailInput({
             mass: 0.8,
           }}
           style={{ transformOrigin: "left top" }}
-          className="absolute left-[16px] top-[20.5px] pointer-events-none select-none font-sans font-medium text-[14px] leading-[1.2] whitespace-nowrap z-20"
+          className="absolute left-[16px] top-0 pointer-events-none select-none font-sans font-medium text-[14px] leading-[1.2] whitespace-nowrap z-20"
         >
           {label}
         </motion.label>

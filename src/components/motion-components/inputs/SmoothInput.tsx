@@ -357,8 +357,8 @@ export function SmoothInput({
           htmlFor={inputId}
           initial={false}
           animate={{
-            y: isFloating ? -11 : 0,
-            scale: isFloating ? 0.857 : 1, // 14px * 0.857 ≈ 12px
+            y: isFloating ? 11.5 : 23,
+            scale: isFloating ? 0.857 : 1, // 14px * 0.857 ≈ 12px (shifts from 23px to 11.5px)
             color: isFocused ? "#626467" : "#98a2b3",
           }}
           transition={{
@@ -368,7 +368,7 @@ export function SmoothInput({
             mass: 0.8,
           }}
           style={{ transformOrigin: "left top" }}
-          className="absolute left-[16px] top-[21px] pointer-events-none select-none font-sans font-medium text-[14px] leading-[1.2] whitespace-nowrap z-20"
+          className="absolute left-[16px] top-0 pointer-events-none select-none font-sans font-medium text-[14px] leading-[1.2] whitespace-nowrap z-20"
         >
           {label}
         </motion.label>
