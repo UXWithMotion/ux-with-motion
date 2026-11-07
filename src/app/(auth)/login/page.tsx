@@ -1,5 +1,6 @@
 "use client";
 
+import { safeNextPath } from "@/lib/auth/redirect";
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,11 +14,10 @@ export default function LoginPage() {
     try {
       const { createClient } = await import('@/lib/supabase/browser');
       const supabase = createClient();
-      const nextParam = new URLSearchParams(window.location.search).get('next');
-      let callbackUrl = `${window.location.origin}/auth/callback`;
-      if (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.includes('\\')) {
-        callbackUrl += `?next=${encodeURIComponent(nextParam)}`;
-      }
+      const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
+      const callback = new URL('/auth/callback', window.location.origin);
+      callback.searchParams.set('next', next);
+      const callbackUrl = callback.toString();
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

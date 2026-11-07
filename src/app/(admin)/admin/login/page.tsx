@@ -1,5 +1,6 @@
 "use client";
 
+import { adminNextPath } from "@/lib/auth/redirect";
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,7 +23,7 @@ export default function AdminLoginPage() {
 
     try {
       const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -33,7 +34,13 @@ export default function AdminLoginPage() {
 
       // Successful login, redirect to admin dashboard.
       // The requireAdmin() server layout will enforce role checks.
-      router.push("/admin");
+      const { data: role, error: roleError } = await supabase.from("user_roles")
+        .select("role").eq("user_id", data.user.id).single();
+      if (roleError || role?.role !== "admin") {
+        throw new Error("This account does not have admin access.");
+      }
+      router.push(adminNextPath(new URLSearchParams(window.location.search).get("next")));
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to sign in");
       setIsLoading(false);

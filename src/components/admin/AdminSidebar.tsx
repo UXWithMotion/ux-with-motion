@@ -28,8 +28,13 @@ export default function AdminSidebar() {
 
   const handleLogout = async () => {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Unable to sign out:", error.message);
+      return;
+    }
     router.push("/admin/login");
+    router.refresh();
   };
 
   const navItems = [

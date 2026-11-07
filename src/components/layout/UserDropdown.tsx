@@ -47,7 +47,8 @@ export function UserDropdown({ userName, userEmail }: UserDropdownProps) {
     try {
       const { createClient } = await import("@/lib/supabase/browser");
       const supabase = createClient();
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       setIsOpen(false);
       router.push("/");
       router.refresh();

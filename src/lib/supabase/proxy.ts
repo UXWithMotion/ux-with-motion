@@ -32,16 +32,31 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Trigger session refresh / token update
-  // The SSR client's setAll callback automatically updates cookies and applies cache headers.
+  // Claims are verified; cookie contents alone never establish identity.
+  let authenticated = false
   try {
-    await supabase.auth.getClaims()
+    const { data, error } = await supabase.auth.getClaims()
+    authenticated = !error && !!data?.claims?.sub
   } catch {
-    // Gracefully recover by ignoring the error; the user is treated as logged out.
+    authenticated = false
   }
 
-  // The proxy is primarily responsible for refreshing the session.
-  // Route protection is handled gracefully at the component level or by layouts as needed.
+  const pathname = request.nextUrl.pathname
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
+  if (isAdminRoute && pathname !== '/admin/login' && !authenticated) {
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = '/admin/login'
+    loginUrl.search = ''
+    loginUrl.searchParams.set('next', pathname + request.nextUrl.search)
+    const response = NextResponse.redirect(loginUrl)
+    // A refreshed/cleared session must survive the redirect to the sign-in page.
+    supabaseResponse.cookies.getAll().forEach(cookie => response.cookies.set(cookie))
+    supabaseResponse.headers.forEach((value, key) => {
+      if (['cache-control', 'expires', 'pragma'].includes(key)) response.headers.set(key, value)
+    })
+    response.headers.set('Cache-Control', 'private, no-store')
+    return response
+  }
 
   return supabaseResponse
 }

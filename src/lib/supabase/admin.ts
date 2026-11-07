@@ -1,13 +1,8 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { requireUser } from '@/lib/auth/require-user'
 
 export async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    redirect('/admin/login')
-  }
+  const { user, supabase } = await requireUser('/admin', '/admin/login')
 
   // Check for admin role in the user_roles table
   const { data: roleData, error: roleError } = await supabase
