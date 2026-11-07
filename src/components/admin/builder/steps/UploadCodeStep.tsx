@@ -1,5 +1,7 @@
 "use client";
 
+import { EmailInputPreview } from "../../preview/EmailInputPreview";
+
 import React, { useState } from "react";
 import { useBuilder } from "../BuilderContext";
 import { Code, LayoutTemplate, Box, ChevronDown, ChevronRight, Info } from "lucide-react";
@@ -367,6 +369,7 @@ export function UploadCodeStep() {
 
         <div className="flex-1 bg-[#F9F9F9] rounded-xl border border-[#DEE1E4] overflow-hidden relative">
           {(() => {
+            if (state.registry_id === "email-input") return <EmailInputPreview />;
             const RegistryComponent = componentRegistry[state.registry_id]?.component;
             
             if (RegistryComponent && (state.source_type === "react" || state.source_type === "both")) {

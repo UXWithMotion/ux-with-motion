@@ -1,3 +1,5 @@
+import { EmailInput } from "@/components/motion-components/inputs/EmailInput";
+import emailInput from "./email-input.json";
 import React from "react";
 import { ContinueButton } from "@/components/motion-components/buttons/ContinueButton";
 import { BubbleArrowButton } from "@/components/motion-components/buttons/BubbleArrowButton";
@@ -46,6 +48,11 @@ export type ComponentRegistryEntry = {
 };
 
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "email-input": {
+    ...emailInput,
+    category: "Inputs",
+    component: EmailInput,
+  },
   "pdf-action-card": {
     registryId: "pdf-action-card",
     name: "PDF Action Card",

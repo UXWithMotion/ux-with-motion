@@ -1,0 +1,31 @@
+{
+  "registryId": "email-input",
+  "name": "Email Input",
+  "description": "An interactive email input with eight Figma states, editable values, and email validation.",
+  "schema_definition": [
+    {
+      "id": "email-state",
+      "variable": "state",
+      "property": "state",
+      "type": "select",
+      "label": "Choose the state",
+      "defaultValue": "Default",
+      "options": [
+        "Default",
+        "Filled",
+        "Hover",
+        "Focused",
+        "Error",
+        "Success",
+        "Disabled",
+        "Read-only"
+      ],
+      "source": "react"
+    }
+  ],
+  "snippets": {
+    "html": "",
+    "css": "",
+    "react": "\"use client\";\n\nimport { useId, useState } from \"react\";\n\nexport const EMAIL_STATES = [\"Default\", \"Filled\", \"Hover\", \"Focused\", \"Error\", \"Success\", \"Disabled\", \"Read-only\"] as const;\nexport type EmailState = (typeof EMAIL_STATES)[number];\n\nexport function isEmailState(value: unknown): value is EmailState {\n  return EMAIL_STATES.some((state) => state === value);\n}\n\nexport interface EmailInputProps {\n  state?: EmailState;\n  className?: string;\n  onValueChange?: (value: string) => void;\n}\n\nconst borders: Record<EmailState, string> = {\n  Default: \"border-[#D8DEE9]\", Filled: \"border-[#626467]\",\n  Hover: \"border-[#A3AEC1]\", Focused: \"border-[#626467]\",\n  Error: \"border-[#E5484D]\", Success: \"border-[#16A36A]\",\n  Disabled: \"border-[#D5DCE5]\", \"Read-only\": \"border-[#B8C2D1]\",\n};\n\n// The keyed field resets the demo fixture only when the chosen state changes.\nexport function EmailInput({ state = \"Default\", ...props }: EmailInputProps) {\n  return <EmailField key={state} state={state} {...props} />;\n}\n\nfunction EmailField({ state = \"Default\", className = \"\", onValueChange }: EmailInputProps) {\n  const id = useId();\n  const disabled = state === \"Disabled\";\n  const readOnly = state === \"Read-only\";\n  const [value, setValue] = useState([\"Default\", \"Hover\", \"Focused\"].includes(state) ? \"\" : state === \"Error\" ? \"Rakesh@uxwithmotion\" : \"Rakesh@uxwithmotion.com\");\n  const [visualState, setVisualState] = useState<EmailState>(state);\n  const [focused, setFocused] = useState(false);\n  const [edited, setEdited] = useState(false);\n  const invalid = visualState === \"Error\";\n  const background = disabled ? \"bg-[#F1F3F6]\" : readOnly ? \"bg-[#F8FAFC]\" : \"bg-white\";\n\n  return (\n    <div className={`w-[404px] max-w-full font-sans font-medium ${className}`} data-email-state={visualState}>\n      <div\n        className={`relative flex flex-col justify-center gap-[4px] overflow-hidden rounded-[12px] border px-[15px] leading-[1.2] transition-colors duration-150 motion-reduce:transition-none ${value ? \"h-[60px]\" : \"h-[58px]\"} ${background} ${borders[visualState]} ${readOnly ? \"focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#626467]\" : \"\"}`}\n        onMouseEnter={() => { if (!disabled && !readOnly && !focused && !value) setVisualState(\"Hover\"); }}\n        onMouseLeave={() => { if (!disabled && !readOnly && !focused && !value) setVisualState(state === \"Hover\" ? \"Hover\" : \"Default\"); }}\n      >\n        <label htmlFor={id} className={value ? \"truncate text-[12px] text-[#98A2B3]\" : \"sr-only\"}>Email Id</label>\n        <input\n          id={id}\n          name=\"email\"\n          type=\"email\"\n          autoComplete=\"email\"\n          spellCheck={false}\n          disabled={disabled}\n          readOnly={readOnly}\n          aria-invalid={invalid}\n          aria-describedby={invalid ? `${id}-error` : undefined}\n          value={value}\n          placeholder=\"Email Id\"\n          className={`block w-full min-w-0 truncate border-0 bg-transparent p-0 font-medium leading-[1.2] outline-none placeholder:text-[#98A2B3] disabled:cursor-not-allowed ${value ? \"text-[16px]\" : \"text-[14px]\"} ${disabled || readOnly ? \"text-[#9199A7]\" : \"text-[#1F2123]\"}`}\n          onFocus={() => { if (!readOnly) { setFocused(true); setVisualState(\"Focused\"); } }}\n          onChange={(event) => {\n            setValue(event.target.value);\n            setEdited(true);\n            setVisualState(\"Focused\");\n            onValueChange?.(event.target.value);\n          }}\n          onBlur={(event) => {\n            setFocused(false);\n            if (readOnly) return;\n            if (!event.target.value) setVisualState(\"Default\");\n            else if (edited) setVisualState(event.target.validity.valid && /\\.[^@.\\s]+$/.test(event.target.value) ? \"Success\" : \"Error\");\n            else setVisualState(value ? \"Filled\" : \"Default\");\n          }}\n        />\n      </div>\n      {invalid && <span id={`${id}-error`} className=\"sr-only\" role=\"status\">Enter a valid email address, such as name@example.com.</span>}\n    </div>\n  );\n}\n"
+  }
+}

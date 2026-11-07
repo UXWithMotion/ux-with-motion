@@ -1,5 +1,6 @@
 "use client";
 
+import { ComponentModalPublic, ComponentItem } from "@/components/ui/ComponentModalPublic";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Play, Edit, Trash2, ArrowLeft, ArrowRight, X, RotateCcw } from "lucide-react";
@@ -10,6 +11,7 @@ import { ComponentCard } from "@/components/ui/ComponentCard";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 
 export default function AdminComponentsPage() {
+  const [emailPreview, setEmailPreview] = useState<ComponentItem | null>(null);
   const [components, setComponents] = useState<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState("");
@@ -117,6 +119,7 @@ export default function AdminComponentsPage() {
               <RotateCcw className={`w-3.5 h-3.5 text-[#7D7F82] ${isReordering ? "animate-spin" : ""}`} />
               <span>Default (Newest)</span>
             </button>
+            <Link href="/admin/components/create?template=email-input" className="rounded-full border border-[#DEE1E4] px-5 py-2.5 text-sm font-medium">Create Email Input draft</Link>
             <Link
               href="/admin/components/create"
               className="bg-[#1F2123] text-white px-5 py-2.5 rounded-[44px] text-sm font-medium transition-opacity hover:opacity-90"
@@ -208,7 +211,12 @@ export default function AdminComponentsPage() {
                   
                   {/* Preview Area */}
                   <div className="h-[151px] w-full bg-[#F7F9FB] relative flex items-center justify-center shrink-0 border-y border-[#DEE1E4] overflow-hidden">
-                    {RegisteredComponent ? (
+                    {comp.registry_id === "email-input" && RegisteredComponent ? (
+                      <div className="flex w-full flex-col items-center gap-4 px-5">
+                        <RegisteredComponent />
+                        <button type="button" onClick={() => setEmailPreview(comp)} className="text-xs font-medium underline underline-offset-4">Preview & customize</button>
+                      </div>
+                    ) : RegisteredComponent ? (
                       <ComponentCard id={comp.id} title={comp.title} tags={comp.tags?.map((t: string) => ({label: t}))}>
                         <RegisteredComponent />
                       </ComponentCard>
@@ -243,6 +251,7 @@ export default function AdminComponentsPage() {
         )}
       </div>
 
+      {emailPreview && <ComponentModalPublic component={emailPreview} isOpen onClose={() => setEmailPreview(null)} isAuthenticated />}
       {/* Delete Confirmation Modal */}
       {componentToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">

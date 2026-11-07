@@ -1,4 +1,8 @@
-import React, { useState, useMemo } from "react";
+"use client";
+
+import { EmailInput, isEmailState } from "@/components/motion-components/inputs/EmailInput";
+import { EmailStateTabs } from "@/components/motion-components/inputs/EmailStateTabs";
+import React, { useState, useMemo, useId } from "react";
 import { useRouter } from "next/navigation";
 import { X, Check, Copy, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,6 +38,9 @@ export function ComponentModalPublic({
   isAuthenticated,
 }: ComponentModalPublicProps) {
   const router = useRouter();
+  const panelId = useId();
+  const [activeTab, setActiveTab] = useState<"code" | "customization">("code");
+  const isEmail = component.registry_id === "email-input";
   const { getOverrides, setOverrides: updateGlobalOverrides, saveOverrides } = useCustomization();
 
   const [copied, setCopied] = useState<string | false>(false);
@@ -43,6 +50,7 @@ export function ComponentModalPublic({
   // Reset overrides when a new component is opened without triggering cascading effect renders
   if (component.id !== prevComponentId) {
     setPrevComponentId(component.id);
+    setActiveTab("code");
     setOverrides(getOverrides(component.id));
   }
 
@@ -88,6 +96,8 @@ export function ComponentModalPublic({
     });
     return active;
   }, [schemaDefToUse, overrides]);
+
+  const emailState = isEmailState(overrides.state) ? overrides.state : "Default";
 
   const overrideStyleBlock = useMemo(() => {
     if (Object.keys(activeOverrides).length === 0) return "";
@@ -139,17 +149,17 @@ export function ComponentModalPublic({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="bg-[#FBFCFD] w-full max-w-[1301px] h-full max-h-[692px] rounded-[40px] p-[32px] flex flex-col md:flex-row gap-[24px] pointer-events-auto shadow-2xl overflow-hidden"
+              className={`bg-[#FBFCFD] w-full max-w-[1301px] h-full max-h-[692px] rounded-[40px] p-[20px] md:p-[32px] flex flex-col ${isEmail ? "lg:flex-row" : "md:flex-row"} gap-[24px] pointer-events-auto shadow-2xl overflow-hidden`}
             >
               {/* Left Side: Preview Area */}
-              <div className="bg-[#FBFCFD] border border-[#DEE1E4] rounded-[28px] w-full md:w-[572px] h-full shrink-0 relative flex items-center justify-center overflow-hidden">
-                <div className="w-full h-full transform flex items-center justify-center scale-110">
+              <div className={`bg-[#FBFCFD] border border-[#DEE1E4] rounded-[28px] w-full ${isEmail ? "lg:w-[48%] h-[160px] lg:h-full px-4" : "md:w-[572px] h-full"} shrink-0 relative flex items-center justify-center overflow-hidden`}>
+                <div className={`w-full h-full transform flex items-center justify-center ${isEmail ? "" : "scale-110"}`}>
                   {(() => {
                     const RegistryComponent = registryEntry?.component;
                     if (RegistryComponent) {
                       return (
                         <div style={activeOverrides as React.CSSProperties} className="w-full h-full flex items-center justify-center">
-                          <RegistryComponent />
+                          {isEmail ? <EmailInput state={emailState} /> : <RegistryComponent />}
                         </div>
                       );
                     }
@@ -180,7 +190,7 @@ export function ComponentModalPublic({
               </div>
 
               {/* Right Side: Panel Area */}
-              <div className="flex-1 flex flex-col gap-[24px] p-0 md:p-[24px] overflow-y-auto">
+              <div className="min-h-0 min-w-0 flex-1 flex flex-col gap-[24px] p-0 md:p-[24px] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between w-full shrink-0">
                   <div className="flex items-center gap-3">
@@ -199,9 +209,37 @@ export function ComponentModalPublic({
 
 
 
+                {isEmail && (
+                  <div role="tablist" aria-label="Component options" className="flex gap-2 border-b border-[#DEE1E4] pb-3">
+                    {(["code", "customization"] as const).map((tab) => (
+                      <button key={tab} type="button" role="tab" aria-selected={activeTab === tab}
+                        aria-controls={`${panelId}-${tab}`}
+                        tabIndex={activeTab === tab ? 0 : -1}
+                        onKeyDown={(event) => {
+                          if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+                            event.preventDefault();
+                            const next = event.key === "Home" ? "code" : event.key === "End" ? "customization" : tab === "code" ? "customization" : "code";
+                            setActiveTab(next);
+                            const buttons = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>("button");
+                            buttons?.[next === "code" ? 0 : 1]?.focus();
+                          }
+                        }}
+                        onClick={() => setActiveTab(tab)}
+                        className={`rounded-full px-5 py-2 text-sm font-medium ${activeTab === tab ? "bg-[#1F2123] text-white" : "bg-[#EEF1F4] text-[#626467]"}`}>
+                        {tab === "code" ? "Code" : "Customization"}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {/* Tab Content */}
                 <div className="flex-1 overflow-y-auto w-full pr-2">
-                  {isLocked ? (
+                  {isEmail && activeTab === "customization" ? (
+                    <div className="flex flex-col gap-6" id={`${panelId}-customization`} role="tabpanel" aria-label="Customization">
+                      <EmailStateTabs value={emailState} onChange={(state) => handleOverrideChange("state", state)} />
+                      <p className="text-sm leading-relaxed text-[#7D7F82]">Select a state to preview it on the left. Edit the email and leave the field to validate it. Disabled blocks editing; Read-only allows selection and copying.</p>
+                      <button type="button" onClick={handleReset} className="self-start rounded-full border border-[#DEE1E4] px-5 py-2 text-sm">Reset to Default</button>
+                    </div>
+                  ) : isLocked ? (
                     <div className="flex flex-col items-center justify-center h-full w-full max-w-[593px] text-center gap-4 py-12 px-4">
                       <div className="size-16 rounded-full bg-[#EEF1F4] border border-[#DEE1E4] flex items-center justify-center mb-1">
                         <Lock className="text-[#454545] size-7" />
@@ -221,7 +259,7 @@ export function ComponentModalPublic({
                       </button>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-[16px] w-full max-w-[593px]">
+                    <div id={`${panelId}-code`} role={isEmail ? "tabpanel" : undefined} aria-label={isEmail ? "Code" : undefined} className="flex flex-col gap-[16px] w-full max-w-[593px]">
                       <h3 className="font-sans font-bold text-[18px] text-[#454545]">
                         Code
                       </h3>
@@ -237,7 +275,9 @@ export function ComponentModalPublic({
                           );
                         }
 
-                        const codeToCopy = nextjsCode;
+                        const codeToCopy = isEmail
+                          ? `${nextjsCode}\n\n// Selected preview state\n// <EmailInput state=${JSON.stringify(emailState)} />`
+                          : nextjsCode;
 
                         return (
                           <div className="flex flex-col gap-4">

@@ -1,5 +1,7 @@
 "use client";
 
+import { EmailInputPreview } from "../../preview/EmailInputPreview";
+
 import React, { useState, useMemo } from "react";
 import { useBuilder } from "../BuilderContext";
 import { LivePreviewIframe } from "../../preview/LivePreviewIframe";
@@ -20,6 +22,10 @@ export function ReviewStep() {
     });
     return active;
   }, [state.schema_definition, overrides]);
+
+  if (state.registry_id === "email-input") {
+    return <div className="flex-1 min-h-0 overflow-auto"><EmailInputPreview /></div>;
+  }
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row items-start gap-6 p-4 md:p-8 min-h-0 overflow-hidden w-full bg-[#F7F9FB]">

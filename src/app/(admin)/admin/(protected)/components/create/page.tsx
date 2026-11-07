@@ -1,5 +1,6 @@
 "use client";
 
+import emailInput from "@/lib/registry/email-input.json";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -10,10 +11,12 @@ import { BuilderShell } from "@/components/admin/builder/BuilderShell";
 export default function CreateComponentPage() {
   const [existingIds, setExistingIds] = useState<Set<string>>(new Set());
   const [isLoaded, setIsLoaded] = useState(false);
+  const [useEmailPreset, setUseEmailPreset] = useState(false);
 
   useEffect(() => {
     getAdminComponents()
       .then((comps) => {
+        setUseEmailPreset(new URLSearchParams(window.location.search).get("template") === "email-input");
         setExistingIds(new Set(comps.map((c: any) => c.registry_id)));
         setIsLoaded(true);
       })
@@ -37,7 +40,7 @@ export default function CreateComponentPage() {
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden relative">
-        <BuilderProvider initialState={{ status: "draft", currentStep: 1 }}>
+        <BuilderProvider initialState={{ status: "draft", currentStep: 1, ...(useEmailPreset ? { title: emailInput.name, registry_id: emailInput.registryId, description: emailInput.description, source_type: "react", snippets: emailInput.snippets, schema_definition: emailInput.schema_definition } : {}) }}>
           <BuilderShell existingIds={existingIds} />
         </BuilderProvider>
       </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { EmailInputPreview } from "../../preview/EmailInputPreview";
+
 import React, { useState } from "react";
 import { useBuilder } from "../BuilderContext";
 import { updateComponent } from "@/lib/admin/components/mutations";
@@ -148,6 +150,7 @@ export function PublishStep() {
         <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm border border-[#DEE1E4] px-4 py-2 rounded-lg z-10 shadow-sm pointer-events-none">
           <span className="font-semibold text-[13px] text-[#7D7F82]">Final Live Preview</span>
         </div>
+{state.registry_id === "email-input" ? <EmailInputPreview /> : (
         <LivePreviewIframe 
           sourceType={state.source_type} 
           snippets={state.snippets}
@@ -155,6 +158,7 @@ export function PublishStep() {
           schemaDefinition={state.schema_definition}
           className="w-full h-full border-none"
         />
+)}
       </div>
 
     </div>
