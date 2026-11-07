@@ -420,7 +420,7 @@ export function SmoothPasswordInput({
           aria-hidden="true"
           className="absolute left-[16px] top-[26px] right-[48px] h-[26px] pointer-events-none font-sans font-medium text-[16px] leading-[26px] text-[#1F2123] z-10 overflow-hidden whitespace-nowrap flex items-center"
           style={{
-            fontFeatureSettings: '"ordn" 1, "salt" 1, "lnum" 1, "pnum" 1, "frac" 1',
+            fontFeatureSettings: '"lnum" 1, "pnum" 1',
           }}
         >
           <AnimatePresence mode="popLayout" initial={false}>
@@ -524,7 +524,7 @@ export function SmoothPasswordInput({
           style={{
             caretColor: "transparent",
             color: "transparent",
-            fontFeatureSettings: '"ordn" 1, "salt" 1, "lnum" 1, "pnum" 1',
+            fontFeatureSettings: '"lnum" 1, "pnum" 1',
             lineHeight: "26px",
           }}
         />
