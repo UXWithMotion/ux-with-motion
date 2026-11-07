@@ -123,6 +123,14 @@ export interface SmoothOtpInputProps {
   autoFocus?: boolean;
 }
 
+// Shared spring physics for both squircle ring and cursor jump
+const smoothSpring = {
+  type: "spring" as const,
+  stiffness: 400,
+  damping: 30,
+  mass: 0.5,
+};
+
 export function SmoothOtpInput({
   className = "",
   property1 = "Field anatomy",
@@ -167,7 +175,7 @@ export function SmoothOtpInput({
 
   // Sync when property1 or controlled value changes
   useEffect(() => {
-    if (value !== undefined) {
+    if (value !== undefined && value !== internalValue) {
       setInternalValue(value.slice(0, length));
       setActiveSlot(Math.min(value.length, length - 1));
     } else if (property1 === "Filled") {
@@ -193,11 +201,13 @@ export function SmoothOtpInput({
     };
   }, []);
 
-  const triggerTyping = () => {
+  const triggerTyping = useCallback(() => {
     setIsTyping(true);
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-    typingTimerRef.current = setTimeout(() => setIsTyping(false), 380);
-  };
+    typingTimerRef.current = setTimeout(() => {
+      setIsTyping(false);
+    }, 450);
+  }, []);
 
   const updateValue = (nextVal: string, nextSlot?: number) => {
     const cleaned = nextVal.replace(/\D/g, "").slice(0, length);
@@ -236,6 +246,7 @@ export function SmoothOtpInput({
     // Backspace handling
     if (e.key === "Backspace") {
       e.preventDefault();
+      triggerTyping();
       const chars = currentValue.split("");
 
       if (chars[activeSlot]) {
@@ -256,9 +267,11 @@ export function SmoothOtpInput({
     // Arrow navigation
     if (e.key === "ArrowLeft") {
       e.preventDefault();
+      triggerTyping();
       setActiveSlot((prev) => Math.max(0, prev - 1));
     } else if (e.key === "ArrowRight") {
       e.preventDefault();
+      triggerTyping();
       setActiveSlot((prev) => Math.min(length - 1, prev + 1));
     }
   };
@@ -283,6 +296,7 @@ export function SmoothOtpInput({
   // Click on a specific box
   const handleBoxClick = (index: number) => {
     if (disabled) return;
+    triggerTyping();
     // Allow clicking on any slot that has a digit, or the first empty slot
     const targetSlot = Math.min(index, currentValue.length);
     setActiveSlot(targetSlot);
@@ -308,7 +322,7 @@ export function SmoothOtpInput({
     setInternalValue("");
     setActiveSlot(0);
     setIsFocused(true);
-    setIsTyping(true);
+    triggerTyping();
 
     let idx = 0;
     const interval = setInterval(() => {
@@ -317,17 +331,16 @@ export function SmoothOtpInput({
         setInternalValue(nextChunk);
         const nextIdx = idx < length - 1 ? idx + 1 : length - 1;
         setActiveSlot(nextIdx);
-        setIsTyping(true);
+        triggerTyping();
         onChange?.(nextChunk);
         idx++;
       } else {
         clearInterval(interval);
         isSimulatingRef.current = false;
-        setTimeout(() => setIsTyping(false), 380);
         onComplete?.(demoCode);
       }
     }, 220);
-  }, [length, onChange, onComplete]);
+  }, [length, onChange, onComplete, triggerTyping]);
 
   // Caret cursor calculations:
   // 1. Must be focused
@@ -340,12 +353,23 @@ export function SmoothOtpInput({
   // Caret X position inside the 232px container:
   // Each box is 52px wide, gap is 8px. Pitch = 60px.
   // Center of box index i = i * 60 + 26px - 0.75px (1.5px caret width) = i * 60 + 25.25px
-  const cursorX = activeSlot * 60 + 25.25;
+  // Exact crisp pixel center: activeSlot * 60 + 25px
+  const cursorX = activeSlot * 60 + 25;
 
   return (
     <div
       className={`relative flex flex-col items-center justify-center w-full p-4 select-none ${className}`}
     >
+      <style>{`
+        @keyframes otpCaretPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        .animate-otp-caret {
+          animation: otpCaretPulse 1.05s ease-in-out infinite;
+        }
+      `}</style>
+
       <div className="relative w-full max-w-[232px] flex flex-col gap-[8px]">
         {/* ── Label Row (Figma Node 1466:5609) ── */}
         <div className="flex items-center gap-[4px] w-full select-none">
@@ -401,18 +425,14 @@ export function SmoothOtpInput({
               height: 52,
               top: 0,
               left: 0,
+              willChange: "transform, opacity",
             }}
             animate={{
               x: activeSlot * 60,
               opacity: isFocused ? 1 : 0,
             }}
             transition={{
-              x: {
-                type: "spring",
-                stiffness: 420,
-                damping: 28,
-                mass: 0.55,
-              },
+              x: smoothSpring,
               opacity: { duration: 0.15 },
             }}
           >
@@ -433,35 +453,36 @@ export function SmoothOtpInput({
 
           {/* 
             Smooth Animated Caret Cursor { | }:
-            Morphs and jumps smoothly from one box to the next empty box across the gap,
-            blinking gently in the center when idle.
-            Hidden completely whenever the active box has a digit or when all digits are filled.
+            Morphs and jumps smoothly from one box to the next empty box across the gap.
+            Completely solid (100% opacity) with zero flicker while jumping or typing.
+            Gently pulses only when stationary and idle in an empty box.
           */}
           <motion.div
             aria-hidden="true"
-            className="absolute top-[16px] left-0 w-[1.5px] h-[20px] bg-[#1F2123] rounded-full pointer-events-none z-20"
+            className="absolute top-[16px] left-0 pointer-events-none z-20 flex items-center justify-center"
+            style={{
+              width: 2,
+              height: 20,
+              willChange: "transform, opacity",
+            }}
             animate={{
               x: cursorX,
-              opacity: !showCaret ? 0 : isTyping ? 1 : [1, 1, 0, 0, 1],
+              opacity: showCaret ? 1 : 0,
             }}
             transition={{
-              x: {
-                type: "spring",
-                stiffness: 450,
-                damping: 28,
-                mass: 0.5,
+              x: smoothSpring,
+              opacity: {
+                duration: 0.12,
+                ease: "easeOut",
               },
-              opacity:
-                !showCaret || isTyping
-                  ? { duration: 0.15 }
-                  : {
-                      duration: 1.0,
-                      repeat: Infinity,
-                      times: [0, 0.45, 0.5, 0.95, 1],
-                      ease: "linear",
-                    },
             }}
-          />
+          >
+            <div
+              className={`w-[1.5px] h-[20px] bg-[#1F2123] rounded-full ${
+                isTyping || !showCaret ? "opacity-100" : "animate-otp-caret"
+              }`}
+            />
+          </motion.div>
 
           {/* Render 4 Individual Squircle Boxes (Figma Nodes 1466:5613 - 1466:5619) */}
           {Array.from({ length }).map((_, index) => {
@@ -488,9 +509,8 @@ export function SmoothOtpInput({
                   <path
                     d={strokePath}
                     fill="none"
-                    stroke={isActive ? "#1F2123" : "#D8DEE9"}
+                    stroke="#D8DEE9"
                     strokeWidth="1"
-                    className="transition-colors duration-200"
                   />
                 </svg>
 
@@ -533,16 +553,14 @@ export function SmoothOtpInput({
                       </motion.span>
                     ) : (
                       /* Placeholder underscore '_' matching Figma Node 1466:5614 */
-                      <motion.span
+                      <span
                         key={`placeholder-${index}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: isActive ? 0 : 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                        className="font-normal text-[14px] leading-normal text-[#98A2B3] select-none"
+                        className={`font-normal text-[14px] leading-normal text-[#98A2B3] select-none transition-opacity duration-100 ${
+                          isActive && isFocused ? "opacity-0" : "opacity-100"
+                        }`}
                       >
                         _
-                      </motion.span>
+                      </span>
                     )}
                   </AnimatePresence>
                 </div>
