@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { razorpay } from "@/lib/razorpay";
+import { getRazorpay } from "@/lib/razorpay";
 
 export async function POST(req: Request) {
   try {
@@ -24,6 +24,11 @@ export async function POST(req: Request) {
 
     if (!planId) {
       return NextResponse.json({ error: "Plan configuration missing" }, { status: 500 });
+    }
+
+    const razorpay = getRazorpay();
+    if (!razorpay) {
+      return NextResponse.json({ error: "Payments are temporarily unavailable" }, { status: 503 });
     }
 
     // Check if user already has an active subscription
@@ -66,7 +71,7 @@ export async function POST(req: Request) {
       keyId: process.env.RAZORPAY_KEY_ID,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Subscription Creation Error:", error);
     return NextResponse.json({ error: "Failed to create subscription" }, { status: 500 });
   }
