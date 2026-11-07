@@ -156,35 +156,34 @@ export function SmoothOtpInput({
   const [isTyping, setIsTyping] = useState(false);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sync when property1 or controlled value changes
-  useEffect(() => {
-    if (value !== undefined) {
-      setInternalValue(value.slice(0, length));
-    } else if (property1 === "Filled" && internalValue === "") {
-      setInternalValue("1469".slice(0, length));
-    } else if (property1 === "Active" && internalValue === "") {
-      setInternalValue("12".slice(0, length));
-      setIsFocused(true);
-    } else if (property1 === "Field anatomy" && (internalValue === "1469" || internalValue === "12")) {
-      setInternalValue("");
-    }
-  }, [property1, value, length]);
-
   const currentValue = (value !== undefined ? value : internalValue).slice(0, length);
 
-  // Focused slot index (clamps to next empty slot or last slot)
+  // Active slot index (0 to length - 1)
   const [activeSlot, setActiveSlot] = useState(() => {
     if (property1 === "Active") return Math.min(2, length - 1);
     if (property1 === "Filled") return length - 1;
     return 0;
   });
 
-  // Keep active slot in sync with value length when typing
+  // Sync when property1 or controlled value changes
   useEffect(() => {
-    if (!isFocused) return;
-    const nextSlot = Math.min(currentValue.length, length - 1);
-    setActiveSlot(nextSlot);
-  }, [currentValue, length, isFocused]);
+    if (value !== undefined) {
+      setInternalValue(value.slice(0, length));
+      setActiveSlot(Math.min(value.length, length - 1));
+    } else if (property1 === "Filled") {
+      setInternalValue("1469".slice(0, length));
+      setActiveSlot(length - 1);
+      setIsFocused(false);
+    } else if (property1 === "Active") {
+      setInternalValue("12".slice(0, length));
+      setActiveSlot(Math.min(2, length - 1));
+      setIsFocused(true);
+    } else if (property1 === "Field anatomy") {
+      setInternalValue("");
+      setActiveSlot(0);
+      setIsFocused(false);
+    }
+  }, [property1, value, length]);
 
   // Compute Figma 52px Squircle Path for each box
   const { strokePath, clipPath } = useMemo(() => {
@@ -194,55 +193,112 @@ export function SmoothOtpInput({
     };
   }, []);
 
-  // Native input change handler (handles typing & paste)
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawVal = e.target.value;
-    // Keep only numerical digits
-    const cleaned = rawVal.replace(/\D/g, "").slice(0, length);
+  const triggerTyping = () => {
+    setIsTyping(true);
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => setIsTyping(false), 380);
+  };
 
+  const updateValue = (nextVal: string, nextSlot?: number) => {
+    const cleaned = nextVal.replace(/\D/g, "").slice(0, length);
     if (value === undefined) {
       setInternalValue(cleaned);
     }
     onChange?.(cleaned);
+    triggerTyping();
 
-    setIsTyping(true);
-    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-    typingTimerRef.current = setTimeout(() => setIsTyping(false), 380);
-
-    const nextIndex = Math.min(cleaned.length, length - 1);
-    setActiveSlot(nextIndex);
+    if (nextSlot !== undefined) {
+      setActiveSlot(Math.min(Math.max(0, nextSlot), length - 1));
+    }
 
     if (cleaned.length === length) {
       onComplete?.(cleaned);
     }
   };
 
-  // Keyboard navigation & backspace jumping
+  // Keyboard navigation & typing
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (disabled) return;
+
+    // Numerical digit entered (0-9)
+    if (/^[0-9]$/.test(e.key)) {
+      e.preventDefault();
+      const chars = currentValue.split("");
+      chars[activeSlot] = e.key;
+      const nextVal = chars.join("").slice(0, length);
+
+      // Advance slot to next slot if not at end
+      const nextSlot = activeSlot < length - 1 ? activeSlot + 1 : activeSlot;
+      updateValue(nextVal, nextSlot);
+      return;
+    }
+
+    // Backspace handling
     if (e.key === "Backspace") {
-      if (currentValue.length > 0) {
-        const nextVal = currentValue.slice(0, -1);
-        if (value === undefined) {
-          setInternalValue(nextVal);
-        }
-        onChange?.(nextVal);
-        setActiveSlot(Math.max(0, nextVal.length));
-        setIsTyping(true);
-        if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-        typingTimerRef.current = setTimeout(() => setIsTyping(false), 380);
+      e.preventDefault();
+      const chars = currentValue.split("");
+
+      if (chars[activeSlot]) {
+        // Current slot has a character: clear it so the slot becomes empty (caret appears!)
+        chars.splice(activeSlot, 1);
+        const nextVal = chars.join("");
+        updateValue(nextVal, activeSlot);
+      } else if (activeSlot > 0) {
+        // Current slot is already empty: jump back to previous slot and delete its character
+        const prevSlot = activeSlot - 1;
+        chars.splice(prevSlot, 1);
+        const nextVal = chars.join("");
+        updateValue(nextVal, prevSlot);
       }
-    } else if (e.key === "ArrowLeft") {
+      return;
+    }
+
+    // Arrow navigation
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
       setActiveSlot((prev) => Math.max(0, prev - 1));
     } else if (e.key === "ArrowRight") {
+      e.preventDefault();
       setActiveSlot((prev) => Math.min(length - 1, prev + 1));
     }
+  };
+
+  // Native input change handler (mobile keypad / autofill / accessibility)
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value;
+    const cleaned = rawVal.replace(/\D/g, "").slice(0, length);
+    const nextSlot = Math.min(cleaned.length, length - 1);
+    updateValue(cleaned, nextSlot);
+  };
+
+  // Paste handling
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text/plain").replace(/\D/g, "").slice(0, length);
+    if (!pasted) return;
+    const nextSlot = Math.min(pasted.length, length - 1);
+    updateValue(pasted, nextSlot);
   };
 
   // Click on a specific box
   const handleBoxClick = (index: number) => {
     if (disabled) return;
-    setActiveSlot(index);
-    inputRef.current?.focus();
+    // Allow clicking on any slot that has a digit, or the first empty slot
+    const targetSlot = Math.min(index, currentValue.length);
+    setActiveSlot(targetSlot);
+    setIsFocused(true);
+    if (inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.setSelectionRange(targetSlot, targetSlot);
+    }
+  };
+
+  const handleInputClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    if (disabled) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickedSlot = Math.min(length - 1, Math.max(0, Math.floor(clickX / 60)));
+    handleBoxClick(clickedSlot);
   };
 
   // Smooth auto-typing simulation demo helper
@@ -259,7 +315,8 @@ export function SmoothOtpInput({
       if (idx < demoCode.length) {
         const nextChunk = demoCode.slice(0, idx + 1);
         setInternalValue(nextChunk);
-        setActiveSlot(Math.min(nextChunk.length, length - 1));
+        const nextIdx = idx < length - 1 ? idx + 1 : length - 1;
+        setActiveSlot(nextIdx);
         setIsTyping(true);
         onChange?.(nextChunk);
         idx++;
@@ -269,8 +326,16 @@ export function SmoothOtpInput({
         setTimeout(() => setIsTyping(false), 380);
         onComplete?.(demoCode);
       }
-    }, 180);
+    }, 220);
   }, [length, onChange, onComplete]);
+
+  // Caret cursor calculations:
+  // 1. Must be focused
+  // 2. The active slot must NOT already have a character inside it (never slice through a digit!)
+  // 3. The input must NOT be completely filled (all digits entered means code is complete!)
+  const isCurrentSlotFilled = Boolean(currentValue[activeSlot]);
+  const isComplete = currentValue.length === length;
+  const showCaret = isFocused && !isCurrentSlotFilled && !isComplete;
 
   // Caret X position inside the 232px container:
   // Each box is 52px wide, gap is 8px. Pitch = 60px.
@@ -313,8 +378,10 @@ export function SmoothOtpInput({
             autoComplete="one-time-code"
             value={currentValue}
             disabled={disabled}
+            onClick={handleInputClick}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             className="absolute inset-0 w-full h-full opacity-0 pointer-events-auto z-30 cursor-pointer"
@@ -325,80 +392,76 @@ export function SmoothOtpInput({
             Smooth Morphing Active Squircle Border Ring:
             Glides smoothly between boxes with spring momentum, framing the currently active slot.
           */}
-          {isFocused && (
-            <motion.div
-              layoutId="otp-active-box-ring"
-              aria-hidden="true"
-              className="absolute pointer-events-none z-20"
-              style={{
-                width: 52,
-                height: 52,
-                top: 0,
-                left: 0,
-              }}
-              animate={{
-                x: activeSlot * 60,
-              }}
-              transition={{
+          <motion.div
+            layoutId="otp-active-box-ring"
+            aria-hidden="true"
+            className="absolute pointer-events-none z-20"
+            style={{
+              width: 52,
+              height: 52,
+              top: 0,
+              left: 0,
+            }}
+            animate={{
+              x: activeSlot * 60,
+              opacity: isFocused ? 1 : 0,
+            }}
+            transition={{
+              x: {
                 type: "spring",
                 stiffness: 420,
                 damping: 28,
                 mass: 0.55,
-              }}
+              },
+              opacity: { duration: 0.15 },
+            }}
+          >
+            <svg
+              aria-hidden="true"
+              className="w-full h-full pointer-events-none overflow-visible"
+              viewBox="0 0 52 52"
+              fill="none"
             >
-              <svg
-                aria-hidden="true"
-                className="w-full h-full pointer-events-none overflow-visible"
-                viewBox="0 0 52 52"
+              <path
+                d={strokePath}
                 fill="none"
-              >
-                <path
-                  d={strokePath}
-                  fill="none"
-                  stroke="#1F2123"
-                  strokeWidth="1.5"
-                />
-              </svg>
-            </motion.div>
-          )}
+                stroke="#1F2123"
+                strokeWidth="1.5"
+              />
+            </svg>
+          </motion.div>
 
           {/* 
             Smooth Animated Caret Cursor { | }:
-            Morphs and jumps smoothly from one box to the next box across the gap,
+            Morphs and jumps smoothly from one box to the next empty box across the gap,
             blinking gently in the center when idle.
+            Hidden completely whenever the active box has a digit or when all digits are filled.
           */}
-          {isFocused && (
-            <motion.div
-              aria-hidden="true"
-              className="absolute top-[16px] left-0 w-[1.5px] h-[20px] bg-[#1F2123] rounded-full pointer-events-none z-20"
-              animate={{
-                x: cursorX,
-                opacity:
-                  !isFocused
-                    ? 0
-                    : isTyping
-                    ? 1
-                    : [1, 1, 0, 0, 1],
-              }}
-              transition={{
-                x: {
-                  type: "spring",
-                  stiffness: 450,
-                  damping: 28,
-                  mass: 0.5,
-                },
-                opacity:
-                  isTyping || !isFocused
-                    ? { duration: 0.15 }
-                    : {
-                        duration: 1.0,
-                        repeat: Infinity,
-                        times: [0, 0.45, 0.5, 0.95, 1],
-                        ease: "linear",
-                      },
-              }}
-            />
-          )}
+          <motion.div
+            aria-hidden="true"
+            className="absolute top-[16px] left-0 w-[1.5px] h-[20px] bg-[#1F2123] rounded-full pointer-events-none z-20"
+            animate={{
+              x: cursorX,
+              opacity: !showCaret ? 0 : isTyping ? 1 : [1, 1, 0, 0, 1],
+            }}
+            transition={{
+              x: {
+                type: "spring",
+                stiffness: 450,
+                damping: 28,
+                mass: 0.5,
+              },
+              opacity:
+                !showCaret || isTyping
+                  ? { duration: 0.15 }
+                  : {
+                      duration: 1.0,
+                      repeat: Infinity,
+                      times: [0, 0.45, 0.5, 0.95, 1],
+                      ease: "linear",
+                    },
+            }}
+          />
 
           {/* Render 4 Individual Squircle Boxes (Figma Nodes 1466:5613 - 1466:5619) */}
           {Array.from({ length }).map((_, index) => {
