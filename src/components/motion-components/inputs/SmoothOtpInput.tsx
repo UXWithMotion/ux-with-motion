@@ -14,6 +14,26 @@ import { motion, AnimatePresence } from "framer-motion";
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
+// ─── Inject Keyframes Once Globally (Zero Re-render Invalidation) ─────────────
+
+if (typeof document !== "undefined") {
+  const styleId = "otp-caret-global-style";
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+      @keyframes otpCaretPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+      }
+      .animate-otp-caret {
+        animation: otpCaretPulse 1.05s ease-in-out infinite;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
 // ─── Figma iOS 100% Corner Smoothing (Squircle) Math ─────────────────────────
 
 function toRadians(degrees: number) {
@@ -123,11 +143,11 @@ export interface SmoothOtpInputProps {
   autoFocus?: boolean;
 }
 
-// Shared spring physics for both squircle ring and cursor jump
+// Shared spring physics for perfectly synchronized ring and cursor jump
 const smoothSpring = {
   type: "spring" as const,
-  stiffness: 400,
-  damping: 30,
+  stiffness: 380,
+  damping: 32,
   mass: 0.5,
 };
 
@@ -193,12 +213,9 @@ export function SmoothOtpInput({
     }
   }, [property1, value, length]);
 
-  // Compute Figma 52px Squircle Path for each box
-  const { strokePath, clipPath } = useMemo(() => {
-    return {
-      strokePath: getSquirclePath(52, 52, 12, 1.0, 0.5),
-      clipPath: getSquirclePath(52, 52, 12, 1.0, 0),
-    };
+  // Compute Figma 52px Squircle Path for each box (0.5 inset for crisp 1px/1.5px stroke alignment)
+  const strokePath = useMemo(() => {
+    return getSquirclePath(52, 52, 12, 1.0, 0.5);
   }, []);
 
   const triggerTyping = useCallback(() => {
@@ -350,26 +367,13 @@ export function SmoothOtpInput({
   const isComplete = currentValue.length === length;
   const showCaret = isFocused && !isCurrentSlotFilled && !isComplete;
 
-  // Caret X position inside the 232px container:
-  // Each box is 52px wide, gap is 8px. Pitch = 60px.
-  // Center of box index i = i * 60 + 26px - 0.75px (1.5px caret width) = i * 60 + 25.25px
-  // Exact crisp pixel center: activeSlot * 60 + 25px
+  // Caret X position: center of box index i = i * 60 + 25px
   const cursorX = activeSlot * 60 + 25;
 
   return (
     <div
       className={`relative flex flex-col items-center justify-center w-full p-4 select-none ${className}`}
     >
-      <style>{`
-        @keyframes otpCaretPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-        .animate-otp-caret {
-          animation: otpCaretPulse 1.05s ease-in-out infinite;
-        }
-      `}</style>
-
       <div className="relative w-full max-w-[232px] flex flex-col gap-[8px]">
         {/* ── Label Row (Figma Node 1466:5609) ── */}
         <div className="flex items-center gap-[4px] w-full select-none">
@@ -415,9 +419,9 @@ export function SmoothOtpInput({
           {/* 
             Smooth Morphing Active Squircle Border Ring:
             Glides smoothly between boxes with spring momentum, framing the currently active slot.
+            GPU hardware-accelerated with zero layoutId projection flickers.
           */}
           <motion.div
-            layoutId="otp-active-box-ring"
             aria-hidden="true"
             className="absolute pointer-events-none z-20"
             style={{
@@ -425,7 +429,9 @@ export function SmoothOtpInput({
               height: 52,
               top: 0,
               left: 0,
-              willChange: "transform, opacity",
+              willChange: "transform",
+              transform: "translateZ(0)",
+              backfaceVisibility: "hidden",
             }}
             animate={{
               x: activeSlot * 60,
@@ -447,6 +453,7 @@ export function SmoothOtpInput({
                 fill="none"
                 stroke="#1F2123"
                 strokeWidth="1.5"
+                shapeRendering="geometricPrecision"
               />
             </svg>
           </motion.div>
@@ -464,6 +471,8 @@ export function SmoothOtpInput({
               width: 2,
               height: 20,
               willChange: "transform, opacity",
+              transform: "translateZ(0)",
+              backfaceVisibility: "hidden",
             }}
             animate={{
               x: cursorX,
@@ -494,23 +503,20 @@ export function SmoothOtpInput({
               <div
                 key={index}
                 onClick={() => handleBoxClick(index)}
-                className="relative size-[52px] bg-white cursor-pointer select-none shrink-0 flex items-center justify-center group"
-                style={{
-                  clipPath: `path('${clipPath}')`,
-                }}
+                className="relative size-[52px] cursor-pointer select-none shrink-0 flex items-center justify-center group"
               >
-                {/* Idle / Inactive Squircle Border Overlay */}
+                {/* Idle / Inactive Squircle Border & Clean White Fill (No clip-path fringe) */}
                 <svg
                   aria-hidden="true"
                   className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible"
                   viewBox="0 0 52 52"
-                  fill="none"
                 >
                   <path
                     d={strokePath}
-                    fill="none"
+                    fill="#FFFFFF"
                     stroke="#D8DEE9"
                     strokeWidth="1"
+                    shapeRendering="geometricPrecision"
                   />
                 </svg>
 
