@@ -9,7 +9,6 @@ import React, {
   useMemo,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { countries as rawCountries } from "countries-list";
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -114,8 +113,8 @@ export interface CountryItem {
   dialCode: string;
 }
 
-// Fallback curated top list in case package is bundled without data
-const FALLBACK_COUNTRIES: CountryItem[] = [
+// Built-in comprehensive worldwide country calling codes
+export const ALL_COUNTRIES: CountryItem[] = [
   { region: "IN", country: "India", dialCode: "+91" },
   { region: "US", country: "United States", dialCode: "+1" },
   { region: "GB", country: "United Kingdom", dialCode: "+44" },
@@ -126,40 +125,104 @@ const FALLBACK_COUNTRIES: CountryItem[] = [
   { region: "FR", country: "France", dialCode: "+33" },
   { region: "JP", country: "Japan", dialCode: "+81" },
   { region: "SG", country: "Singapore", dialCode: "+65" },
+  { region: "AF", country: "Afghanistan", dialCode: "+93" },
+  { region: "AL", country: "Albania", dialCode: "+355" },
+  { region: "DZ", country: "Algeria", dialCode: "+213" },
+  { region: "AD", country: "Andorra", dialCode: "+376" },
+  { region: "AO", country: "Angola", dialCode: "+244" },
+  { region: "AR", country: "Argentina", dialCode: "+54" },
+  { region: "AM", country: "Armenia", dialCode: "+374" },
+  { region: "AT", country: "Austria", dialCode: "+43" },
+  { region: "AZ", country: "Azerbaijan", dialCode: "+994" },
+  { region: "BH", country: "Bahrain", dialCode: "+973" },
+  { region: "BD", country: "Bangladesh", dialCode: "+880" },
+  { region: "BY", country: "Belarus", dialCode: "+375" },
+  { region: "BE", country: "Belgium", dialCode: "+32" },
+  { region: "BZ", country: "Belize", dialCode: "+501" },
+  { region: "BJ", country: "Benin", dialCode: "+229" },
+  { region: "BT", country: "Bhutan", dialCode: "+975" },
+  { region: "BO", country: "Bolivia", dialCode: "+591" },
+  { region: "BA", country: "Bosnia and Herzegovina", dialCode: "+387" },
+  { region: "BW", country: "Botswana", dialCode: "+267" },
+  { region: "BR", country: "Brazil", dialCode: "+55" },
+  { region: "BN", country: "Brunei", dialCode: "+673" },
+  { region: "BG", country: "Bulgaria", dialCode: "+359" },
+  { region: "KH", country: "Cambodia", dialCode: "+855" },
+  { region: "CL", country: "Chile", dialCode: "+56" },
+  { region: "CN", country: "China", dialCode: "+86" },
+  { region: "CO", country: "Colombia", dialCode: "+57" },
+  { region: "CR", country: "Costa Rica", dialCode: "+506" },
+  { region: "HR", country: "Croatia", dialCode: "+385" },
+  { region: "CY", country: "Cyprus", dialCode: "+357" },
+  { region: "CZ", country: "Czech Republic", dialCode: "+420" },
+  { region: "DK", country: "Denmark", dialCode: "+45" },
+  { region: "DO", country: "Dominican Republic", dialCode: "+1" },
+  { region: "EC", country: "Ecuador", dialCode: "+593" },
+  { region: "EG", country: "Egypt", dialCode: "+20" },
+  { region: "EE", country: "Estonia", dialCode: "+372" },
+  { region: "ET", country: "Ethiopia", dialCode: "+251" },
+  { region: "FI", country: "Finland", dialCode: "+358" },
+  { region: "GE", country: "Georgia", dialCode: "+995" },
+  { region: "GH", country: "Ghana", dialCode: "+233" },
+  { region: "GR", country: "Greece", dialCode: "+30" },
+  { region: "HK", country: "Hong Kong", dialCode: "+852" },
+  { region: "HU", country: "Hungary", dialCode: "+36" },
+  { region: "IS", country: "Iceland", dialCode: "+354" },
+  { region: "ID", country: "Indonesia", dialCode: "+62" },
+  { region: "IE", country: "Ireland", dialCode: "+353" },
+  { region: "IL", country: "Israel", dialCode: "+972" },
+  { region: "IT", country: "Italy", dialCode: "+39" },
+  { region: "JM", country: "Jamaica", dialCode: "+1" },
+  { region: "JO", country: "Jordan", dialCode: "+962" },
+  { region: "KZ", country: "Kazakhstan", dialCode: "+7" },
+  { region: "KE", country: "Kenya", dialCode: "+254" },
+  { region: "KR", country: "South Korea", dialCode: "+82" },
+  { region: "KW", country: "Kuwait", dialCode: "+965" },
+  { region: "LV", country: "Latvia", dialCode: "+371" },
+  { region: "LB", country: "Lebanon", dialCode: "+961" },
+  { region: "LT", country: "Lithuania", dialCode: "+370" },
+  { region: "LU", country: "Luxembourg", dialCode: "+352" },
+  { region: "MY", country: "Malaysia", dialCode: "+60" },
+  { region: "MV", country: "Maldives", dialCode: "+960" },
+  { region: "MT", country: "Malta", dialCode: "+356" },
+  { region: "MU", country: "Mauritius", dialCode: "+230" },
+  { region: "MX", country: "Mexico", dialCode: "+52" },
+  { region: "MA", country: "Morocco", dialCode: "+212" },
+  { region: "NP", country: "Nepal", dialCode: "+977" },
+  { region: "NL", country: "Netherlands", dialCode: "+31" },
+  { region: "NZ", country: "New Zealand", dialCode: "+64" },
+  { region: "NG", country: "Nigeria", dialCode: "+234" },
+  { region: "NO", country: "Norway", dialCode: "+47" },
+  { region: "OM", country: "Oman", dialCode: "+968" },
+  { region: "PK", country: "Pakistan", dialCode: "+92" },
+  { region: "PA", country: "Panama", dialCode: "+507" },
+  { region: "PE", country: "Peru", dialCode: "+51" },
+  { region: "PH", country: "Philippines", dialCode: "+63" },
+  { region: "PL", country: "Poland", dialCode: "+48" },
+  { region: "PT", country: "Portugal", dialCode: "+351" },
+  { region: "QA", country: "Qatar", dialCode: "+974" },
+  { region: "RO", country: "Romania", dialCode: "+40" },
+  { region: "RU", country: "Russia", dialCode: "+7" },
+  { region: "SA", country: "Saudi Arabia", dialCode: "+966" },
+  { region: "RS", country: "Serbia", dialCode: "+381" },
+  { region: "SK", country: "Slovakia", dialCode: "+421" },
+  { region: "SI", country: "Slovenia", dialCode: "+386" },
+  { region: "ZA", country: "South Africa", dialCode: "+27" },
+  { region: "ES", country: "Spain", dialCode: "+34" },
+  { region: "LK", country: "Sri Lanka", dialCode: "+94" },
+  { region: "SE", country: "Sweden", dialCode: "+46" },
+  { region: "CH", country: "Switzerland", dialCode: "+41" },
+  { region: "TW", country: "Taiwan", dialCode: "+886" },
+  { region: "TH", country: "Thailand", dialCode: "+66" },
+  { region: "TR", country: "Turkey", dialCode: "+90" },
+  { region: "UA", country: "Ukraine", dialCode: "+380" },
+  { region: "UY", country: "Uruguay", dialCode: "+598" },
+  { region: "UZ", country: "Uzbekistan", dialCode: "+998" },
+  { region: "VN", country: "Vietnam", dialCode: "+84" },
 ];
 
 function buildCountryList(): CountryItem[] {
-  try {
-    if (!rawCountries || typeof rawCountries !== "object") {
-      return FALLBACK_COUNTRIES;
-    }
-    const featured = ["IN", "US", "GB", "AE", "AU"];
-    const all = Object.entries(rawCountries)
-      .map(([code, c]: [string, any]) => ({
-        region: code.toUpperCase(),
-        country: c.name || code,
-        dialCode:
-          "+" +
-          (Array.isArray(c.phone)
-            ? c.phone[0]
-            : c.phone !== undefined
-            ? c.phone
-            : ""),
-      }))
-      .filter((c) => c.dialCode && c.dialCode !== "+undefined" && c.dialCode !== "+");
-
-    const featuredItems = featured
-      .map((code) => all.find((c) => c.region === code))
-      .filter(Boolean) as CountryItem[];
-
-    const restItems = all
-      .filter((c) => !featured.includes(c.region))
-      .sort((a, b) => a.country.localeCompare(b.country));
-
-    return [...featuredItems, ...restItems];
-  } catch {
-    return FALLBACK_COUNTRIES;
-  }
+  return ALL_COUNTRIES;
 }
 
 // ─── Component Props ─────────────────────────────────────────────────────────
@@ -211,7 +274,7 @@ export function SmoothPhoneInput({
   const [triggerWidth, setTriggerWidth] = useState(76);
   const [inputWidth, setInputWidth] = useState(304);
 
-  // Country calling code data from countries-list
+  // Built-in country calling code data
   const countryList = useMemo(() => buildCountryList(), []);
 
   // Selected Country state (defaults to India / +91 matching Figma)
@@ -219,7 +282,7 @@ export function SmoothPhoneInput({
     const found = countryList.find(
       (c) => c.region.toUpperCase() === defaultCountry.toUpperCase()
     );
-    return found || countryList[0] || FALLBACK_COUNTRIES[0];
+    return found || countryList[0] || ALL_COUNTRIES[0];
   }, [countryList, defaultCountry]);
 
   const [selectedCountry, setSelectedCountry] =

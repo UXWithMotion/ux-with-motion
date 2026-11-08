@@ -490,7 +490,10 @@ export function ProfileClient({
                           </div>
 
                           {/* Component Display Area */}
-                          <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden bg-transparent pointer-events-auto z-0 p-4">
+                          <div 
+                            onClick={(e) => e.stopPropagation()}
+                            className="relative w-full flex-1 flex items-center justify-center overflow-hidden bg-transparent pointer-events-auto z-0 p-4 cursor-default"
+                          >
                             <div className="w-full h-full transform flex items-center justify-center scale-[0.9]">
                               {RegistryComponent ? (
                                 <div

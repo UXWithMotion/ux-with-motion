@@ -224,8 +224,13 @@ export function ComponentsExplorer({
   };
 
   const handleCardClick = (e: React.MouseEvent, comp: ComponentItem) => {
-    // Normal left click without cmd/ctrl/shift: open modal and update URL without full page reload
-    if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+    // Middle-click or cmd/ctrl click opens in new tab
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) {
+      window.open(`/components/${comp.registry_id || comp.id}`, "_blank");
+      return;
+    }
+    // Normal left click: open modal and update URL without full page reload
+    if (e.button === 0) {
       e.preventDefault();
       setActiveModalOverride(comp);
       const slug = comp.registry_id || comp.id;
@@ -251,11 +256,10 @@ export function ComponentsExplorer({
     const componentSlug = comp.registry_id || comp.id;
 
     return (
-      <Link
+      <div
         key={comp.id}
-        href={`/components/${componentSlug}`}
         onClick={(e) => handleCardClick(e, comp)}
-        className="bg-[#F7F9FB] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip group cursor-pointer min-h-[251px] h-auto block text-inherit no-underline transition-shadow hover:shadow-xs"
+        className="bg-[#F7F9FB] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip group cursor-pointer min-h-[251px] h-auto text-inherit transition-shadow hover:shadow-xs"
       >
         {/* Top action bar */}
         <div className="flex items-center justify-between p-[8px] w-full shrink-0 relative z-10 bg-transparent min-h-[50px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -282,7 +286,10 @@ export function ComponentsExplorer({
         </div>
 
         {/* Component Display Area */}
-        <div className="relative w-full flex-1 flex items-center justify-center bg-transparent pointer-events-auto z-0 min-h-[151px] py-3 px-2 overflow-hidden">
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          className="relative w-full flex-1 flex items-center justify-center bg-transparent pointer-events-auto z-0 min-h-[151px] py-3 px-2 overflow-hidden cursor-default"
+        >
           <div className="w-full transform flex items-center justify-center scale-[0.9]">
             {(() => {
               const overrides = getOverrides(comp.id);
@@ -306,7 +313,6 @@ export function ComponentsExplorer({
               if (RegistryComponent) {
                 return (
                   <div
-                    onClick={(e) => e.stopPropagation()}
                     style={activeOverrides as React.CSSProperties}
                     className="w-full flex items-center justify-center"
                   >
@@ -345,12 +351,20 @@ export function ComponentsExplorer({
         {/* Footer Area */}
         <div className="flex items-center justify-between px-[20px] py-[12px] w-full shrink-0 relative z-10 bg-transparent h-[48px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-auto">
           <div className="flex items-center gap-2 max-w-[100%]">
-            <h3 className="font-sans font-medium text-[20px] leading-[1.2] text-[#454545] whitespace-nowrap truncate">
+            <Link
+              href={`/components/${componentSlug}`}
+              onClick={(e) => {
+                if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                  e.preventDefault();
+                }
+              }}
+              className="font-sans font-medium text-[20px] leading-[1.2] text-[#454545] whitespace-nowrap truncate hover:text-black transition-colors"
+            >
               {comp.title}
-            </h3>
+            </Link>
           </div>
         </div>
-      </Link>
+      </div>
     );
   };
 

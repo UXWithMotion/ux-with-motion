@@ -287,8 +287,11 @@ export function ComponentCard({ id, title, tags = DEFAULT_TAGS, children, access
         </div>
         
         {/* Component Display Area */}
-        <div className="w-full relative flex-1 flex items-center justify-center shrink-0 overflow-clip">
-          <div onClick={(e) => e.stopPropagation()} ref={contentRef}>
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          className="w-full relative flex-1 flex items-center justify-center shrink-0 overflow-clip cursor-default"
+        >
+          <div ref={contentRef} className="w-full flex items-center justify-center">
             {renderedContent}
           </div>
         </div>
