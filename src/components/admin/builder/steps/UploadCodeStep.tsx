@@ -365,13 +365,13 @@ export function UploadCodeStep() {
           <p className="text-sm text-[#7D7F82]">Updates as you paste code.</p>
         </div>
 
-        <div className="flex-1 bg-[#F9F9F9] rounded-xl border border-[#DEE1E4] overflow-hidden relative">
+        <div className="flex-1 bg-[#F9F9F9] rounded-xl border border-[#DEE1E4] overflow-auto relative">
           {(() => {
             const RegistryComponent = componentRegistry[state.registry_id]?.component;
             
             if (RegistryComponent && (state.source_type === "react" || state.source_type === "both")) {
               return (
-                <div className="w-full h-full flex items-center justify-center p-8 bg-[#FBFCFD] relative">
+                <div className="w-full min-h-full flex items-center justify-center p-8 bg-[#FBFCFD] relative">
                   <div className="absolute top-3 right-3 bg-[#F7F9FB] border border-[#DEE1E4] text-[#7D7F82] text-[10px] px-2 py-1 rounded-md font-mono uppercase tracking-widest shadow-sm">Registry Render</div>
                   <RegistryComponent />
                 </div>

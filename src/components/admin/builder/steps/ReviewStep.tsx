@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useBuilder } from "../BuilderContext";
 import { LivePreviewIframe } from "../../preview/LivePreviewIframe";
+import { componentRegistry } from "@/lib/registry/components";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
@@ -158,19 +159,27 @@ export function ReviewStep() {
       </div>
 
       {/* Right Panel: Live Preview */}
-      <div className="flex-1 w-full h-[500px] min-h-[400px] lg:h-full bg-[#FBFCFD] border border-[#DEE1E4] shadow-sm rounded-2xl flex flex-col overflow-hidden relative">
+      <div className="flex-1 w-full h-[500px] min-h-[400px] lg:h-full bg-[#FBFCFD] border border-[#DEE1E4] shadow-sm rounded-2xl flex flex-col overflow-auto relative">
         <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-white/90 backdrop-blur-md rounded-lg border border-[#DEE1E4] shadow-sm flex items-center gap-2 pointer-events-none">
           <div className="w-2 h-2 rounded-full bg-[#00963D] animate-pulse" />
           <span className="text-xs font-semibold text-[#454545]">Live Preview</span>
         </div>
-        <div className="w-full h-full bg-[#F7F9FB]">
-          <LivePreviewIframe 
-            sourceType={state.source_type} 
-            snippets={state.snippets} 
-            overrides={activeOverrides}
-            schemaDefinition={state.schema_definition}
-            className="w-full h-full border-none"
-          />
+        <div className="w-full min-h-full bg-[#F7F9FB] flex items-center justify-center p-8">
+          {(() => {
+            const RegistryComponent = componentRegistry[state.registry_id]?.component;
+            if (RegistryComponent && (state.source_type === "react" || state.source_type === "both")) {
+              return <RegistryComponent {...activeOverrides} />;
+            }
+            return (
+              <LivePreviewIframe 
+                sourceType={state.source_type} 
+                snippets={state.snippets} 
+                overrides={activeOverrides}
+                schemaDefinition={state.schema_definition}
+                className="w-full h-full border-none"
+              />
+            );
+          })()}
         </div>
       </div>
 
