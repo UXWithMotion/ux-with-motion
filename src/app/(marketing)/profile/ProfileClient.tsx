@@ -463,7 +463,7 @@ export function ProfileClient({
                         <div
                           key={comp.id}
                           onClick={() => setActiveModalComponent(comp)}
-                          className="bg-[#F7F9FB] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip group cursor-pointer min-h-[251px]"
+                          className="bg-[#F1F1F2] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip group cursor-pointer min-h-[251px]"
                         >
                           {/* Top action bar */}
                           <div className="flex items-center justify-between p-[8px] w-full shrink-0 relative z-10 bg-transparent min-h-[50px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">

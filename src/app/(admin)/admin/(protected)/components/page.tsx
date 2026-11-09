@@ -207,7 +207,7 @@ export default function AdminComponentsPage() {
                   </div>
                   
                   {/* Preview Area */}
-                  <div className="h-[151px] w-full bg-[#F7F9FB] relative flex items-center justify-center shrink-0 border-y border-[#DEE1E4] overflow-hidden">
+                  <div className="h-[151px] w-full bg-[#F1F1F2] relative flex items-center justify-center shrink-0 border-y border-[#DEE1E4] overflow-hidden">
                     {RegisteredComponent ? (
                       <ComponentCard id={comp.id} title={comp.title} tags={comp.tags?.map((t: string) => ({label: t}))}>
                         <RegisteredComponent />

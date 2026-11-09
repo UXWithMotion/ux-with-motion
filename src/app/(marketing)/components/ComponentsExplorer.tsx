@@ -259,7 +259,7 @@ export function ComponentsExplorer({
       <div
         key={comp.id}
         onClick={(e) => handleCardClick(e, comp)}
-        className="bg-[#F7F9FB] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip group cursor-pointer min-h-[251px] h-auto text-inherit transition-shadow hover:shadow-xs"
+        className="bg-[#F1F1F2] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip group cursor-pointer min-h-[251px] h-auto text-inherit transition-shadow hover:shadow-xs"
       >
         {/* Top action bar */}
         <div className="flex items-center justify-between p-[8px] w-full shrink-0 relative z-10 bg-transparent min-h-[50px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -393,7 +393,7 @@ export function ComponentsExplorer({
                 {col.map((i) => (
                   <div
                     key={i}
-                    className="bg-[#F7F9FB] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip min-h-[253px]"
+                    className="bg-[#F1F1F2] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip min-h-[253px]"
                   >
                     <div className="flex items-center justify-between p-[8px] w-full shrink-0 relative z-10 min-h-[50px]">
                       <div className="w-[50px] h-[20px] bg-[#E5E7EB] rounded-full animate-pulse ml-1" />

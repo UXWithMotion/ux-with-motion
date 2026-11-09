@@ -164,7 +164,7 @@ export function ReviewStep() {
           <div className="w-2 h-2 rounded-full bg-[#00963D] animate-pulse" />
           <span className="text-xs font-semibold text-[#454545]">Live Preview</span>
         </div>
-        <div className="w-full min-h-full bg-[#F7F9FB] flex items-center justify-center p-8">
+        <div className="w-full min-h-full bg-[#F1F1F2] flex items-center justify-center p-8">
           {(() => {
             const RegistryComponent = componentRegistry[state.registry_id]?.component;
             if (RegistryComponent && (state.source_type === "react" || state.source_type === "both")) {
