@@ -547,6 +547,13 @@ export function ProfileClient({
           isOpen={!!activeModalComponent}
           onClose={() => setActiveModalComponent(null)}
           isAuthenticated={true}
+          allComponents={savedComponents}
+          savedIds={savedComponents.map((c) => c.id)}
+          onToggleSave={(id) => {
+            const targetComp = savedComponents.find((c) => c.id === id);
+            if (targetComp) toggleSave(null as any, targetComp);
+          }}
+          onSelectComponent={(comp) => setActiveModalComponent(comp)}
         />
       )}
     </div>

@@ -339,29 +339,6 @@ export default function ${title.replace(/\s+/g, "")}() {
                         </div>
                       </button>
 
-                      {/* HTML-CSS Code */}
-                      <button 
-                        onClick={() => {
-                          const htmlCssContent = `<!-- ${title} -->\n<button style="border-radius: ${currentStyles.cornerRadius}px; font-size: ${currentStyles.fontSize}px; font-weight: ${currentStyles.fontWeight}; padding: 8px 16px;">\n  ${title}\n</button>`;
-                          navigator.clipboard.writeText(htmlCssContent);
-                          setCopied('htmlcss');
-                          setTimeout(() => setCopied(false), 2000);
-                        }}
-                        className="border border-[#DEE1E4] flex items-center justify-between px-[24px] py-[20px] rounded-[53px] w-full hover:bg-[#F7F9FB] transition-colors group"
-                      >
-                        <span className="font-sans font-medium text-[17.28px] text-[#3D3D3D]">
-                          HTML-CSS Code
-                        </span>
-                        <div className="flex gap-[10px] items-center">
-                          <span className="font-sans font-medium text-[17.28px] text-[#B0B0B0]">
-                            |
-                          </span>
-                          <div className="size-[18px] text-[#454545] group-hover:text-[#1566E5] transition-colors flex items-center justify-center">
-                            {copied === 'htmlcss' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
-                          </div>
-                        </div>
-                      </button>
-
                       {/* Figma Link */}
                       <button 
                         onClick={() => {

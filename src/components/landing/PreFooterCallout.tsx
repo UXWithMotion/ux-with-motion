@@ -12,7 +12,7 @@ export function PreFooterCallout() {
       <Container className="flex flex-col items-center text-center">
         {/* Callout Heading (Figma: GC Gudlak Bold / 61px on desktop, white text, max-w-[956px]) */}
         <h2 className="font-title font-bold text-[32px] sm:text-[44px] md:text-[61px] leading-[1.15] text-white tracking-[-0.02em] text-balance max-w-[956px] mx-auto mb-8 md:mb-10">
-          Explore 50 button components.
+          Explore micro interactions.
         </h2>
 
         {/* Existing Reusable Explore Component CTA (Figma Frame 5030 / Node 1023:2992) */}

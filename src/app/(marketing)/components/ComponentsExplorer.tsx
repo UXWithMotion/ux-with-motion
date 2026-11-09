@@ -448,6 +448,16 @@ export function ComponentsExplorer({
           onClose={handleCloseModal}
           isAuthenticated={isAuthenticated}
           isDetailPage={Boolean(initialActiveSlug)}
+          allComponents={components}
+          savedIds={savedIds}
+          onToggleSave={(id) => toggleSave(null as any, id)}
+          onSelectComponent={(comp) => {
+            setActiveModalOverride(comp);
+            const slug = comp.registry_id || comp.id;
+            const searchParamVal = searchParams?.get("search");
+            const searchStr = searchParamVal ? `?search=${encodeURIComponent(searchParamVal)}` : "";
+            window.history.pushState(null, "", `/components/${slug}${searchStr}`);
+          }}
         />
       )}
     </div>
