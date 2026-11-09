@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "Components",
+  title: "Animated UI Components",
   description:
     "Browse 50+ animated, interactive UI components crafted by UX With Motion (uxwithmotion). Copy-paste React, Framer Motion, HTML, CSS, and Figma micro-interactions.",
   alternates: {
@@ -25,8 +25,11 @@ export default async function ComponentsPage() {
   const components = await getPublishedComponents();
 
   return (
-    <Suspense fallback={<div className="w-full min-h-screen bg-[#FBFCFD]" />}>
-      <ComponentsExplorer initialComponents={components} />
-    </Suspense>
+    <>
+      <h1 className="sr-only">Animated UI Components</h1>
+      <Suspense fallback={<div className="w-full min-h-screen bg-[#FBFCFD]" />}>
+        <ComponentsExplorer initialComponents={components} />
+      </Suspense>
+    </>
   );
 }

@@ -1,62 +1,34 @@
 import type { MetadataRoute } from "next";
 import { getPublishedComponents } from "@/lib/admin/components/queries";
-import { componentRegistry } from "@/lib/registry/components";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://www.uxwithmotion.com";
-
-  // Static marketing routes
-  const staticRoutes: MetadataRoute.Sitemap = [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/components`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/pricing`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/contact`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
+  const publicPaths = [
+    "",
+    "/components",
+    "/pricing",
+    "/contact",
+    "/components/buttons",
+    "/components/design-system",
+    "/components/micro-interactions",
   ];
+  const routes = new Map<string, MetadataRoute.Sitemap[number]>();
 
-  // High-intent SEO category landing routes
-  const categoryRoutes: MetadataRoute.Sitemap = [
-    "buttons",
-    "design-system",
-    "micro-interactions",
-  ].map((cat) => ({
-    url: `${baseUrl}/components/${cat}`,
-    lastModified: new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.85,
-  }));
+  for (const path of publicPaths) {
+    const url = `${baseUrl}${path}`;
+    routes.set(url, { url });
+  }
 
-  // Map of component slugs to lastModified & priority
-  const componentMap = new Map<string, { lastModified: Date; priority: number }>();
-
-  // 1. Fetch live published components from Supabase
+  // Component pages resolve published records, so list only those records.
   try {
     const components = await getPublishedComponents();
-    for (const comp of components || []) {
-      const slug = comp.registry_id || comp.id;
-      if (slug) {
-        componentMap.set(slug, {
-          lastModified: comp.updated_at ? new Date(comp.updated_at) : new Date(),
-          priority: 0.8,
+    for (const component of components) {
+      const slug = component.registry_id || component.id;
+      const url = `${baseUrl}/components/${slug}`;
+      if (slug && !routes.has(url)) {
+        routes.set(url, {
+          url,
+          lastModified: component.updated_at || undefined,
         });
       }
     }
@@ -64,26 +36,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("Failed to load published components for sitemap:", e);
   }
 
-  // 2. Codebase fallback if database query returned empty
-  if (componentMap.size === 0) {
-    Object.keys(componentRegistry).forEach((slug) => {
-      if (slug !== "ai-search-toggle") {
-        componentMap.set(slug, {
-          lastModified: new Date(),
-          priority: 0.8,
-        });
-      }
-    });
-  }
-
-  const componentRoutes: MetadataRoute.Sitemap = Array.from(componentMap.entries()).map(
-    ([slug, info]) => ({
-      url: `${baseUrl}/components/${slug}`,
-      lastModified: info.lastModified,
-      changeFrequency: "weekly",
-      priority: info.priority,
-    })
-  );
-
-  return [...staticRoutes, ...categoryRoutes, ...componentRoutes];
+  return Array.from(routes.values());
 }

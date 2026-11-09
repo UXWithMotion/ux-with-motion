@@ -447,6 +447,7 @@ export function ComponentsExplorer({
           isOpen={!!activeModalComponent}
           onClose={handleCloseModal}
           isAuthenticated={isAuthenticated}
+          isDetailPage={Boolean(initialActiveSlug)}
         />
       )}
     </div>

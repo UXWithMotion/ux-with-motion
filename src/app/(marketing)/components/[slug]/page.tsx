@@ -72,7 +72,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (categorySeo) {
     return {
-      title: `${categorySeo.title} | UX With Motion`,
+      title: categorySeo.title,
       description: categorySeo.desc,
       keywords: categorySeo.keywords,
       alternates: {
@@ -107,10 +107,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ...(comp.tags || []),
     ];
 
-    const canonicalUrl = `https://www.uxwithmotion.com/components/${slug}`;
+    const canonicalUrl = `https://www.uxwithmotion.com/components/${comp.registry_id || comp.id}`;
 
     return {
-      title: `${title} — Animated UI Component | UX With Motion`,
+      title: `${title} — Animated UI Component`,
       description,
       keywords,
       alternates: {
@@ -149,14 +149,6 @@ export default async function ComponentSlugPage({ params }: Props) {
     notFound();
   }
 
-  const title = categorySeo
-    ? categorySeo.h1
-    : comp?.title || slug.replace(/-/g, " ");
-  const description = categorySeo
-    ? categorySeo.desc
-    : comp?.description ||
-      `Interactive ${title} built for Figma design systems and React applications.`;
-
   const jsonLd = categorySeo
     ? {
         "@context": "https://schema.org",
@@ -177,7 +169,7 @@ export default async function ComponentSlugPage({ params }: Props) {
         description:
           comp?.description ||
           `Interactive ${comp?.title} component by UX With Motion`,
-        codeRepository: `https://www.uxwithmotion.com/components/${slug}`,
+        codeRepository: `https://www.uxwithmotion.com/components/${comp?.registry_id || comp?.id}`,
         programmingLanguage: "React, Tailwind CSS, Framer Motion",
         author: {
           "@type": "Organization",
@@ -193,28 +185,12 @@ export default async function ComponentSlugPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Crawlable Server-Rendered Semantic HTML for Google Search Indexing */}
-      <article className="sr-only">
-        <header>
-          <h1>{title}</h1>
-          <p>{description}</p>
+      {categorySeo && !comp && (
+        <header className="sr-only">
+          <h1>{categorySeo.h1}</h1>
+          <p>{categorySeo.desc}</p>
         </header>
-
-        {comp && comp.tags && comp.tags.length > 0 && (
-          <p>Tags: {comp.tags.join(", ")}</p>
-        )}
-
-        <section>
-          <h2>How to use this {slug.replace(/-/g, " ")} in Figma & React</h2>
-          <p>
-            Every component in <strong>UX With Motion (uxwithmotion)</strong> is
-            engineered with consistent design system tokens, spring physics, and
-            accessibility baked in. Copy the React / Tailwind CSS code snippet
-            directly into your Next.js project or duplicate the interactive
-            component variants directly into your Figma workspace.
-          </p>
-        </section>
-      </article>
+      )}
 
       {/* Interactive Client Component & Explorer UI */}
       <Suspense fallback={<div className="w-full min-h-screen bg-[#FBFCFD]" />}>
