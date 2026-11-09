@@ -17,7 +17,7 @@ export function PreFooterCallout() {
 
         {/* Existing Reusable Explore Component CTA (Figma Frame 5030 / Node 1023:2992) */}
         <div className="flex justify-center">
-          <ExploreButton href="#components" label="Explore component" />
+          <ExploreButton href="/components" label="Explore component" />
         </div>
       </Container>
     </section>

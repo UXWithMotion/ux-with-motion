@@ -300,25 +300,25 @@ export function ComponentModalPublic({
                     </div>
                   ) : (
                     <div className="flex flex-col gap-3">
-                      {/* Input Field - Next.js [2312:9393] */}
+                      {/* Input Field - Next.js [Figma 2322:9668] */}
                       {nextjsSnippet && (
                         <button
                           type="button"
                           onClick={() => copyToClipboard(nextjsSnippet, "nextjs")}
-                          className="w-full h-[50px] rounded-[40px] border border-[#DEE1E4] px-4 sm:px-5 flex items-center justify-between bg-white hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
+                          className="w-full h-[54px] sm:h-[60px] rounded-[53px] border border-[#CBCED1] px-5 sm:px-6 flex items-center justify-between bg-white hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
                         >
-                          <span className="font-sans font-medium text-[15px] text-[#1F2123]">
+                          <span className="font-sans font-medium text-[16px] sm:text-[17.28px] text-[#3D3D3D]">
                             Next.js Code
                           </span>
                           <div className="flex items-center gap-[10px]">
-                            <span className="font-sans font-medium text-[15px] text-[#B0B0B0]">|</span>
+                            <span className="font-sans font-medium text-[16px] sm:text-[17.28px] text-[#B0B0B0]">|</span>
                             {copied === "nextjs" ? (
                               <span className="flex items-center gap-1.5 text-green-600 text-[13px] font-medium">
                                 <Check size={16} className="text-green-600" />
                                 Copied
                               </span>
                             ) : (
-                              <Copy size={16} className="text-[#454545] group-hover:text-black transition-colors" />
+                              <Copy size={16} className="text-[#3D3D3D] group-hover:text-black transition-colors" />
                             )}
                           </div>
                         </button>
@@ -329,20 +329,20 @@ export function ComponentModalPublic({
                         <button
                           type="button"
                           onClick={() => copyToClipboard(snippets.figma, "figma")}
-                          className="w-full h-[50px] rounded-[40px] border border-[#DEE1E4] px-4 sm:px-5 flex items-center justify-between bg-white hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
+                          className="w-full h-[54px] sm:h-[60px] rounded-[53px] border border-[#CBCED1] px-5 sm:px-6 flex items-center justify-between bg-white hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
                         >
-                          <span className="font-sans font-medium text-[15px] text-[#1F2123]">
+                          <span className="font-sans font-medium text-[16px] sm:text-[17.28px] text-[#3D3D3D]">
                             Figma Link
                           </span>
                           <div className="flex items-center gap-[10px]">
-                            <span className="font-sans font-medium text-[15px] text-[#B0B0B0]">|</span>
+                            <span className="font-sans font-medium text-[16px] sm:text-[17.28px] text-[#B0B0B0]">|</span>
                             {copied === "figma" ? (
                               <span className="flex items-center gap-1.5 text-green-600 text-[13px] font-medium">
                                 <Check size={16} className="text-green-600" />
                                 Copied
                               </span>
                             ) : (
-                              <Copy size={16} className="text-[#454545] group-hover:text-black transition-colors" />
+                              <Copy size={16} className="text-[#3D3D3D] group-hover:text-black transition-colors" />
                             )}
                           </div>
                         </button>
@@ -353,20 +353,20 @@ export function ComponentModalPublic({
                         <button
                           type="button"
                           onClick={() => copyToClipboard(snippets.prompt, "prompt")}
-                          className="w-full h-[50px] rounded-[40px] border border-[#DEE1E4] px-4 sm:px-5 flex items-center justify-between bg-white hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
+                          className="w-full h-[54px] sm:h-[60px] rounded-[53px] border border-[#CBCED1] px-5 sm:px-6 flex items-center justify-between bg-white hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
                         >
-                          <span className="font-sans font-medium text-[15px] text-[#1F2123]">
+                          <span className="font-sans font-medium text-[16px] sm:text-[17.28px] text-[#3D3D3D]">
                             Prompt
                           </span>
                           <div className="flex items-center gap-[10px]">
-                            <span className="font-sans font-medium text-[15px] text-[#B0B0B0]">|</span>
+                            <span className="font-sans font-medium text-[16px] sm:text-[17.28px] text-[#B0B0B0]">|</span>
                             {copied === "prompt" ? (
                               <span className="flex items-center gap-1.5 text-green-600 text-[13px] font-medium">
                                 <Check size={16} className="text-green-600" />
                                 Copied
                               </span>
                             ) : (
-                              <Copy size={16} className="text-[#454545] group-hover:text-black transition-colors" />
+                              <Copy size={16} className="text-[#3D3D3D] group-hover:text-black transition-colors" />
                             )}
                           </div>
                         </button>
@@ -604,73 +604,73 @@ export function ComponentModalPublic({
                           const codeToCopy = nextjsCode;
 
                           return (
-                            <div className="flex flex-col gap-4">
-                              <div className="relative group">
-                                <div className="absolute top-4 right-4 flex items-center">
-                                  <button
-                                    onClick={() => copyToClipboard(codeToCopy, "nextjs")}
-                                    className="flex items-center gap-2 bg-white/90 backdrop-blur border border-[#DEE1E4] hover:bg-white text-[#3D3D3D] px-3 py-1.5 rounded-full shadow-sm transition-all cursor-pointer"
-                                    title="Copy Next.js Code"
-                                  >
-                                    {copied === "nextjs" ? (
-                                      <>
-                                        <Check size={14} className="text-green-500" />
-                                        <span className="text-[12px] font-medium text-green-600">
-                                          Copied
-                                        </span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Copy size={14} />
-                                        <span className="text-[12px] font-medium">Copy</span>
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
-                                <pre className="bg-[#F7F9FB] border border-[#DEE1E4] rounded-[16px] p-[24px] overflow-x-auto text-[13px] font-mono leading-relaxed text-[#454545] whitespace-pre">
-                                  <code>{codeToCopy}</code>
-                                </pre>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(codeToCopy, "nextjs")}
+                              className="w-full h-[60px] rounded-[53px] border border-[#CBCED1] px-[24px] flex items-center justify-between bg-white hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
+                            >
+                              <span className="font-sans font-medium text-[17.28px] text-[#3D3D3D]">
+                                Next.js Code
+                              </span>
+                              <div className="flex items-center gap-[10px]">
+                                <span className="font-sans font-medium text-[17.28px] text-[#B0B0B0]">|</span>
+                                {copied === "nextjs" ? (
+                                  <span className="flex items-center gap-1.5 text-green-600 text-[14px] font-medium">
+                                    <Check size={18} className="text-green-600" />
+                                    Copied
+                                  </span>
+                                ) : (
+                                  <Copy size={18} className="text-[#3D3D3D] group-hover:text-black transition-colors" />
+                                )}
                               </div>
-                            </div>
+                            </button>
                           );
                         })()}
 
                         {snippets.figma && (
-                          <div
-                            className="border border-[#DEE1E4] rounded-[53px] px-[24px] py-[16px] w-full flex items-center justify-between bg-[#FBFCFD] hover:bg-[#F7F9FB] transition-colors cursor-pointer"
+                          <button
+                            type="button"
+                            className="w-full h-[60px] rounded-[53px] border border-[#CBCED1] px-[24px] flex items-center justify-between bg-white hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
                             onClick={() => copyToClipboard(snippets.figma, "figma")}
                           >
                             <span className="font-sans font-medium text-[17.28px] text-[#3D3D3D]">
                               Figma Link
                             </span>
                             <div className="flex items-center gap-[10px]">
-                              <span className="text-[#B0B0B0] text-[17.28px]">|</span>
+                              <span className="font-sans font-medium text-[17.28px] text-[#B0B0B0]">|</span>
                               {copied === "figma" ? (
-                                <Check size={16} className="text-green-500" />
+                                <span className="flex items-center gap-1.5 text-green-600 text-[14px] font-medium">
+                                  <Check size={18} className="text-green-600" />
+                                  Copied
+                                </span>
                               ) : (
-                                <Copy size={16} className="text-[#3D3D3D]" />
+                                <Copy size={18} className="text-[#3D3D3D] group-hover:text-black transition-colors" />
                               )}
                             </div>
-                          </div>
+                          </button>
                         )}
 
                         {snippets.prompt && (
-                          <div
-                            className="border border-[#DEE1E4] rounded-[53px] px-[24px] py-[16px] w-full flex items-center justify-between bg-[#FBFCFD] hover:bg-[#F7F9FB] transition-colors cursor-pointer"
+                          <button
+                            type="button"
+                            className="w-full h-[60px] rounded-[53px] border border-[#CBCED1] px-[24px] flex items-center justify-between bg-white hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
                             onClick={() => copyToClipboard(snippets.prompt, "prompt")}
                           >
                             <span className="font-sans font-medium text-[17.28px] text-[#3D3D3D]">
                               Prompt
                             </span>
                             <div className="flex items-center gap-[10px]">
-                              <span className="text-[#B0B0B0] text-[17.28px]">|</span>
+                              <span className="font-sans font-medium text-[17.28px] text-[#B0B0B0]">|</span>
                               {copied === "prompt" ? (
-                                <Check size={16} className="text-green-500" />
+                                <span className="flex items-center gap-1.5 text-green-600 text-[14px] font-medium">
+                                  <Check size={18} className="text-green-600" />
+                                  Copied
+                                </span>
                               ) : (
-                                <Copy size={16} className="text-[#3D3D3D]" />
+                                <Copy size={18} className="text-[#3D3D3D] group-hover:text-black transition-colors" />
                               )}
                             </div>
-                          </div>
+                          </button>
                         )}
                       </div>
                     )}

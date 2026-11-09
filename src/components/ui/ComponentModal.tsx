@@ -324,7 +324,7 @@ export default function ${title.replace(/\s+/g, "")}() {
                           setCopied('nextjs');
                           setTimeout(() => setCopied(false), 2000);
                         }}
-                        className="border border-[#DEE1E4] flex items-center justify-between px-[24px] py-[20px] rounded-[53px] w-full hover:bg-[#F7F9FB] transition-colors group"
+                        className="border border-[#CBCED1] flex items-center justify-between px-[24px] h-[60px] rounded-[53px] w-full hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
                       >
                         <span className="font-sans font-medium text-[17.28px] text-[#3D3D3D]">
                           Next.js Code
@@ -333,7 +333,7 @@ export default function ${title.replace(/\s+/g, "")}() {
                           <span className="font-sans font-medium text-[17.28px] text-[#B0B0B0]">
                             |
                           </span>
-                          <div className="size-[18px] text-[#454545] group-hover:text-[#1566E5] transition-colors flex items-center justify-center">
+                          <div className="size-[18px] text-[#454545] group-hover:text-black transition-colors flex items-center justify-center">
                             {copied === 'nextjs' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
                           </div>
                         </div>
@@ -346,7 +346,7 @@ export default function ${title.replace(/\s+/g, "")}() {
                           setCopied('figma');
                           setTimeout(() => setCopied(false), 2000);
                         }}
-                        className="border border-[#DEE1E4] flex items-center justify-between px-[24px] py-[20px] rounded-[53px] w-full hover:bg-[#F7F9FB] transition-colors group"
+                        className="border border-[#CBCED1] flex items-center justify-between px-[24px] h-[60px] rounded-[53px] w-full hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
                       >
                         <span className="font-sans font-medium text-[17.28px] text-[#3D3D3D]">
                           Figma Link
@@ -355,7 +355,7 @@ export default function ${title.replace(/\s+/g, "")}() {
                           <span className="font-sans font-medium text-[17.28px] text-[#B0B0B0]">
                             |
                           </span>
-                          <div className="size-[18px] text-[#454545] group-hover:text-[#1566E5] transition-colors flex items-center justify-center">
+                          <div className="size-[18px] text-[#454545] group-hover:text-black transition-colors flex items-center justify-center">
                             {copied === 'figma' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
                           </div>
                         </div>
