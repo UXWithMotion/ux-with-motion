@@ -25,6 +25,7 @@ export interface ComponentModalPublicProps {
   isOpen: boolean;
   onClose: () => void;
   isAuthenticated?: boolean;
+  isDetailPage?: boolean;
 }
 
 export function ComponentModalPublic({
@@ -32,7 +33,9 @@ export function ComponentModalPublic({
   isOpen,
   onClose,
   isAuthenticated,
+  isDetailPage = false,
 }: ComponentModalPublicProps) {
+  const Heading = isDetailPage ? "h1" : "h2";
   const router = useRouter();
   const { getOverrides, setOverrides: updateGlobalOverrides, saveOverrides } = useCustomization();
 
@@ -184,9 +187,9 @@ export function ComponentModalPublic({
                 {/* Header */}
                 <div className="flex items-center justify-between w-full shrink-0">
                   <div className="flex items-center gap-3">
-                    <h2 className="font-sans font-medium text-[24px] md:text-[31px] text-[#454545] leading-[1.2]">
+                    <Heading className="font-sans font-medium text-[24px] md:text-[31px] text-[#454545] leading-[1.2]">
                       {component.title}
-                    </h2>
+                    </Heading>
                   </div>
                   <button
                     onClick={handleClose}
@@ -198,6 +201,12 @@ export function ComponentModalPublic({
                 </div>
 
 
+
+                {isDetailPage && component.description?.trim() && (
+                  <p className="text-[15px] leading-relaxed text-[#7D7F82]">
+                    {component.description}
+                  </p>
+                )}
 
                 {/* Tab Content */}
                 <div className="flex-1 overflow-y-auto w-full pr-2">
