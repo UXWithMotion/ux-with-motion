@@ -324,30 +324,6 @@ export function ComponentModalPublic({
                         </button>
                       )}
 
-                      {/* Figma Link */}
-                      {snippets.figma && (
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(snippets.figma, "figma")}
-                          className="w-full h-[54px] sm:h-[60px] rounded-[53px] border border-[#CBCED1] px-5 sm:px-6 flex items-center justify-between bg-white hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
-                        >
-                          <span className="font-sans font-medium text-[16px] sm:text-[17.28px] text-[#3D3D3D]">
-                            Figma Link
-                          </span>
-                          <div className="flex items-center gap-[10px]">
-                            <span className="font-sans font-medium text-[16px] sm:text-[17.28px] text-[#B0B0B0]">|</span>
-                            {copied === "figma" ? (
-                              <span className="flex items-center gap-1.5 text-green-600 text-[13px] font-medium">
-                                <Check size={16} className="text-green-600" />
-                                Copied
-                              </span>
-                            ) : (
-                              <Copy size={16} className="text-[#3D3D3D] group-hover:text-black transition-colors" />
-                            )}
-                          </div>
-                        </button>
-                      )}
-
                       {/* Prompt */}
                       {snippets.prompt && (
                         <button
@@ -626,29 +602,6 @@ export function ComponentModalPublic({
                             </button>
                           );
                         })()}
-
-                        {snippets.figma && (
-                          <button
-                            type="button"
-                            className="w-full h-[60px] rounded-[53px] border border-[#CBCED1] px-[24px] flex items-center justify-between bg-white hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
-                            onClick={() => copyToClipboard(snippets.figma, "figma")}
-                          >
-                            <span className="font-sans font-medium text-[17.28px] text-[#3D3D3D]">
-                              Figma Link
-                            </span>
-                            <div className="flex items-center gap-[10px]">
-                              <span className="font-sans font-medium text-[17.28px] text-[#B0B0B0]">|</span>
-                              {copied === "figma" ? (
-                                <span className="flex items-center gap-1.5 text-green-600 text-[14px] font-medium">
-                                  <Check size={18} className="text-green-600" />
-                                  Copied
-                                </span>
-                              ) : (
-                                <Copy size={18} className="text-[#3D3D3D] group-hover:text-black transition-colors" />
-                              )}
-                            </div>
-                          </button>
-                        )}
 
                         {snippets.prompt && (
                           <button

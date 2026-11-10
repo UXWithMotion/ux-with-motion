@@ -2,17 +2,16 @@
 
 import React from "react";
 import { useBuilder } from "./BuilderContext";
-import { Check } from "lucide-react";
 
 const STEPS = [
-  { id: 1, label: "Upload Code" },
-  { id: 2, label: "Detect Elements" },
-  { id: 3, label: "Review" },
-  { id: 4, label: "Publish" },
+  { id: 1, label: "Code & Details" },
+  { id: 2, label: "Preview & Controls" },
+  { id: 3, label: "Docs & SEO" },
+  { id: 4, label: "Review & Publish" },
 ];
 
 export function StepIndicator() {
-  const { state } = useBuilder();
+  const { state, setStep } = useBuilder();
   const { currentStep } = state;
 
   return (
@@ -22,7 +21,6 @@ export function StepIndicator() {
         const isCurrent = step.id === currentStep;
         const isLast = index === STEPS.length - 1;
 
-        // Determine pill classes based on state
         let pillBg = "bg-[#FBFCFD]";
         let pillBorder = "border-[#DEE1E4]";
         let pillText = "text-[#454545]";
@@ -40,15 +38,17 @@ export function StepIndicator() {
         return (
           <div key={step.id} className="flex gap-[8px] items-center shrink-0">
             {/* Pill Badge */}
-            <div
-              className={`flex items-start px-[10px] py-[4px] rounded-[12px] border border-solid shrink-0 transition-colors ${pillBg} ${pillBorder}`}
+            <button
+              type="button"
+              onClick={() => setStep(step.id)}
+              className={`flex items-start px-[10px] py-[4px] rounded-[12px] border border-solid shrink-0 transition-colors cursor-pointer ${pillBg} ${pillBorder}`}
             >
               <span
                 className={`font-semibold text-[12px] leading-normal whitespace-nowrap ${pillText}`}
               >
                 {step.id}. {step.label}
               </span>
-            </div>
+            </button>
 
             {/* Separator Chevron */}
             {!isLast && (
@@ -62,4 +62,3 @@ export function StepIndicator() {
     </div>
   );
 }
-

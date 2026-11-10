@@ -338,28 +338,6 @@ export default function ${title.replace(/\s+/g, "")}() {
                           </div>
                         </div>
                       </button>
-
-                      {/* Figma Link */}
-                      <button 
-                        onClick={() => {
-                          navigator.clipboard.writeText(`https://www.figma.com/design/3MlafJ3S3cD7vfSGUBlodn/Ux-with-motion`);
-                          setCopied('figma');
-                          setTimeout(() => setCopied(false), 2000);
-                        }}
-                        className="border border-[#CBCED1] flex items-center justify-between px-[24px] h-[60px] rounded-[53px] w-full hover:bg-[#F7F9FB] active:scale-[0.99] transition-all cursor-pointer group shadow-2xs"
-                      >
-                        <span className="font-sans font-medium text-[17.28px] text-[#3D3D3D]">
-                          Figma Link
-                        </span>
-                        <div className="flex gap-[10px] items-center">
-                          <span className="font-sans font-medium text-[17.28px] text-[#B0B0B0]">
-                            |
-                          </span>
-                          <div className="size-[18px] text-[#454545] group-hover:text-black transition-colors flex items-center justify-center">
-                            {copied === 'figma' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
-                          </div>
-                        </div>
-                      </button>
                     </div>
                   )}
                 </div>

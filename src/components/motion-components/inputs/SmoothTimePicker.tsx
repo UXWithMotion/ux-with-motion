@@ -564,3 +564,4 @@ export function SmoothTimePicker({
 }
 
 export default SmoothTimePicker;
+export { smoothTimePickerControls } from "@/lib/registry/definitions/smoothTimePicker";

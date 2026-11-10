@@ -5,6 +5,7 @@ import {
   getPublishedComponents,
   getPublishedComponentBySlug,
 } from "@/lib/admin/components/queries";
+import { componentRegistry } from "@/lib/registry/components";
 import { ComponentsExplorer } from "../ComponentsExplorer";
 
 type Props = {
@@ -12,7 +13,7 @@ type Props = {
 };
 
 // High-priority SEO keywords mapped to dedicated category & intent slugs
-const seoData: Record<
+const seoCategories: Record<
   string,
   { title: string; h1: string; desc: string; keywords: string[] }
 > = {
@@ -57,7 +58,7 @@ export async function generateStaticParams() {
     const componentSlugs = (components || []).map((comp) => ({
       slug: comp.registry_id || comp.id,
     }));
-    const categorySlugs = Object.keys(seoData).map((slug) => ({ slug }));
+    const categorySlugs = Object.keys(seoCategories).map((slug) => ({ slug }));
     return [...categorySlugs, ...componentSlugs];
   } catch (e) {
     console.error("Failed to generate static params for components:", e);
@@ -67,12 +68,13 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const categorySeo = seoData[slug];
+  const categorySeo = seoCategories[slug];
   const comp = await getPublishedComponentBySlug(slug);
+  const registryEntry = comp?.registry_id ? componentRegistry[comp.registry_id] : undefined;
 
   if (categorySeo) {
     return {
-      title: categorySeo.title,
+      title: `${categorySeo.title} | UX With Motion`,
       description: categorySeo.desc,
       keywords: categorySeo.keywords,
       alternates: {
@@ -96,50 +98,55 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (comp) {
     const title = comp.title;
     const description =
+      registryEntry?.seo?.metaDescription ||
       comp.description ||
-      `Explore the ${title} UI component. Preview its live interactive design and copy-paste code for React, Framer Motion, HTML, CSS, and Figma.`;
-    const keywords = [
-      title.toLowerCase(),
-      `${title.toLowerCase()} component`,
-      "animation component",
-      "best button components",
-      "ux with motion",
-      ...(comp.tags || []),
-    ];
+      `Explore the ${title} UI component. Preview its live interactive design and copy-paste code for React, Framer Motion, and Tailwind CSS.`;
 
     const canonicalUrl = `https://www.uxwithmotion.com/components/${comp.registry_id || comp.id}`;
+    const pageTitle = registryEntry?.seo?.seoTitle || `${title} — Animated UI Component | UX With Motion`;
 
     return {
-      title: `${title} — Animated UI Component`,
+      title: pageTitle,
       description,
-      keywords,
+      keywords: [
+        title.toLowerCase(),
+        `${title.toLowerCase()} component`,
+        "animation component",
+        "react motion component",
+        "ux with motion",
+        ...(comp.tags || []),
+      ],
       alternates: {
         canonical: canonicalUrl,
       },
       openGraph: {
-        title: `${title} — Animated UI Component | UX With Motion`,
+        title: pageTitle,
         description,
         url: canonicalUrl,
         type: "article",
         siteName: "UX With Motion",
+        images: registryEntry?.seo?.shareImage ? [{ url: registryEntry.seo.shareImage }] : undefined,
       },
       twitter: {
         card: "summary_large_image",
-        title: `${title} — Animated UI Component | UX With Motion`,
+        title: pageTitle,
         description,
       },
     };
   }
 
   return {
-    title: `${slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} — Animated UI Component`,
-    description: `Copy-paste the ${slug.replace(/-/g, " ")} animated component for Figma and React by UX With Motion.`,
+    title: `${slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} — Animated UI Component | UX With Motion`,
+    description: `Copy-paste the ${slug.replace(/-/g, " ")} animated component for React and Tailwind CSS by UX With Motion.`,
+    alternates: {
+      canonical: `https://www.uxwithmotion.com/components/${slug}`,
+    },
   };
 }
 
 export default async function ComponentSlugPage({ params }: Props) {
   const { slug } = await params;
-  const categorySeo = seoData[slug];
+  const categorySeo = seoCategories[slug];
   const [comp, allComponents] = await Promise.all([
     getPublishedComponentBySlug(slug),
     getPublishedComponents(),
@@ -185,14 +192,13 @@ export default async function ComponentSlugPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {categorySeo && !comp && (
-        <header className="sr-only">
-          <h1>{categorySeo.h1}</h1>
-          <p>{categorySeo.desc}</p>
-        </header>
-      )}
+      {/* Semantic accessible header for search engines & assistive tech */}
+      <header className="sr-only">
+        <h1>{categorySeo ? categorySeo.h1 : comp?.title}</h1>
+        <p>{categorySeo ? categorySeo.desc : comp?.description}</p>
+      </header>
 
-      {/* Interactive Client Component & Explorer UI */}
+      {/* Interactive Components Explorer with active modal for this component */}
       <Suspense fallback={<div className="w-full min-h-screen bg-[#FBFCFD]" />}>
         <ComponentsExplorer
           initialComponents={allComponents}

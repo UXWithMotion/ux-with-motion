@@ -14,7 +14,7 @@ export default function CreateComponentPage() {
   useEffect(() => {
     getAdminComponents()
       .then((comps) => {
-        setExistingIds(new Set(comps.map((c: any) => c.registry_id)));
+        setExistingIds(new Set(comps.map((c: { registry_id: string }) => c.registry_id)));
         setIsLoaded(true);
       })
       .catch(console.error);
