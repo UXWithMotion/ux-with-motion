@@ -2,7 +2,7 @@
 
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { requireAdmin } from "@/lib/supabase/admin";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { componentRegistry } from "@/lib/registry/components";
 import { saveComponentDraft, discardComponentDraft } from "./drafts";
 import { ComponentDocs, ComponentSeo } from "@/lib/registry/types";
@@ -102,6 +102,7 @@ export async function createComponent(data: ComponentMutationPayload) {
     revalidatePath("/components");
     revalidatePath(`/components/${registryId}`);
     revalidatePath("/sitemap.xml");
+    revalidateTag("public-components-catalog", { expire: 0 });
   }
   revalidatePath("/admin/components");
 
@@ -228,6 +229,7 @@ export async function updateComponent(id: string, data: ComponentMutationPayload
   revalidatePath("/sitemap.xml");
   revalidatePath("/admin/components");
   revalidatePath(`/admin/components/${id}/edit`);
+  revalidateTag("public-components-catalog", { expire: 0 });
 
   return result;
 }
@@ -249,6 +251,7 @@ export async function deleteComponent(id: string) {
   revalidatePath("/components");
   revalidatePath("/sitemap.xml");
   revalidatePath("/admin/components");
+  revalidateTag("public-components-catalog", { expire: 0 });
   return { success: true };
 }
 
@@ -270,6 +273,7 @@ export async function updateComponentsOrder(updates: { id: string; order: number
   revalidatePath("/components", "page");
   revalidatePath("/admin/components");
   revalidatePath("/admin/components", "page");
+  revalidateTag("public-components-catalog", { expire: 0 });
   return { success: true };
 }
 
@@ -302,5 +306,6 @@ export async function resetComponentsToDefaultOrder() {
   revalidatePath("/components", "page");
   revalidatePath("/admin/components");
   revalidatePath("/admin/components", "page");
+  revalidateTag("public-components-catalog", { expire: 0 });
   return { success: true };
 }

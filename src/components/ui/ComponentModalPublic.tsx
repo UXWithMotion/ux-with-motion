@@ -119,10 +119,51 @@ export function ComponentModalPublic({
   // User must be authenticated to view or copy source code during public beta
   const isLocked = isAuthenticated !== undefined ? !isAuthenticated : !!component.is_locked;
 
+  // On-demand fetch of source snippets only when user is authenticated and modal is open
+  const [fetchedSnippets, setFetchedSnippets] = useState<Record<string, string> | null>(null);
+  const [isLoadingSource, setIsLoadingSource] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isOpen || isLocked) {
+      setFetchedSnippets(null);
+      return;
+    }
+
+    if (component.snippets?.react || component.snippets?.nextjs) {
+      setFetchedSnippets(component.snippets);
+      return;
+    }
+
+    let active = true;
+    setIsLoadingSource(true);
+    const slug = component.registry_id || component.id;
+
+    fetch(`/api/components/${encodeURIComponent(slug)}/source`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load source");
+        return res.json();
+      })
+      .then((data) => {
+        if (active && data?.snippets) {
+          setFetchedSnippets(data.snippets);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching component source:", err);
+      })
+      .finally(() => {
+        if (active) setIsLoadingSource(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, isLocked, component.id, component.registry_id, component.snippets]);
+
   // Fallback to registry if DB doesn't have snippets and it hasn't been locked
   const snippets = isLocked
-    ? { html: "", css: "", nextjs: "" }
-    : component.snippets || registryEntry?.snippets || { html: "", css: "", nextjs: "" };
+    ? { html: "", css: "", nextjs: "", react: "", prompt: "" }
+    : fetchedSnippets || component.snippets || registryEntry?.snippets || { html: "", css: "", nextjs: "", react: "", prompt: "" };
 
   const handleSignInClick = () => {
     const slug = component.registry_id || component.id;
@@ -297,6 +338,10 @@ export function ComponentModalPublic({
                       >
                         Sign in
                       </button>
+                    </div>
+                  ) : isLoadingSource ? (
+                    <div className="w-full h-[54px] sm:h-[60px] rounded-[53px] border border-[#CBCED1] px-5 sm:px-6 flex items-center justify-center bg-white text-[#7D7F82] text-[15px] font-sans animate-pulse">
+                      Loading code...
                     </div>
                   ) : (
                     <div className="flex flex-col gap-3">
@@ -566,7 +611,11 @@ export function ComponentModalPublic({
                           Code
                         </h3>
 
-                        {(() => {
+                        {isLoadingSource ? (
+                          <div className="w-full h-[60px] rounded-[53px] border border-[#CBCED1] px-[24px] flex items-center justify-center bg-white text-[#7D7F82] text-[16px] font-sans animate-pulse">
+                            Loading code...
+                          </div>
+                        ) : (() => {
                           const nextjsCode = snippets.nextjs || snippets.react;
 
                           if (!nextjsCode) {

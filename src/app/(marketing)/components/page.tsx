@@ -1,10 +1,7 @@
-import React, { Suspense } from "react";
+import React from "react";
 import type { Metadata } from "next";
-import { getPublishedComponents } from "@/lib/admin/components/queries";
+import { getPublicCatalogComponents } from "@/lib/admin/components/queries";
 import { ComponentsExplorer } from "./ComponentsExplorer";
-
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Animated UI Components",
@@ -22,14 +19,12 @@ export const metadata: Metadata = {
 };
 
 export default async function ComponentsPage() {
-  const components = await getPublishedComponents();
+  const components = await getPublicCatalogComponents();
 
   return (
     <>
       <h1 className="sr-only">Animated UI Components</h1>
-      <Suspense fallback={<div className="w-full min-h-screen bg-[#FBFCFD]" />}>
-        <ComponentsExplorer initialComponents={components} />
-      </Suspense>
+      <ComponentsExplorer initialComponents={components} />
     </>
   );
 }

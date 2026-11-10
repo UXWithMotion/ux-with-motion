@@ -1,8 +1,25 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { requireAdmin } from "@/lib/supabase/admin";
+import { unstable_cache } from "next/cache";
+
+export type PublicCatalogCard = {
+  id: string;
+  title: string;
+  registry_id: string;
+  description?: string;
+  tags?: string[];
+  order?: number;
+  type?: string;
+  status: string;
+  source_type?: string;
+  access_tier?: "free" | "premium";
+  is_locked?: boolean;
+  snippets?: any;
+  schema_definition?: any[];
+  updated_at?: string;
+};
 
 export async function getAdminComponents() {
   await requireAdmin();
@@ -38,65 +55,71 @@ export async function getAdminComponent(id: string) {
   return data;
 }
 
-export async function getPublishedComponents() {
-  let isAuthenticated = false;
-  try {
-    const { createClient } = await import("@/lib/supabase/server");
-    const authSupabase = await createClient();
-    const { data: { user } } = await authSupabase.auth.getUser();
-    isAuthenticated = !!user;
-  } catch {
-    // cookies() unavailable during static generation, sitemap, or build time
-    isAuthenticated = false;
-  }
+/**
+ * Cached public catalog query.
+ * Selects only the lightweight fields needed for component cards:
+ * Excludes heavy raw source strings, avoids synchronous auth checks, and caches the result.
+ */
+export const getPublicCatalogComponents = unstable_cache(
+  async (): Promise<PublicCatalogCard[]> => {
+    const supabase = createServiceRoleClient();
 
-  const { createServiceRoleClient } = await import("@/lib/supabase/service-role");
-  const supabase = createServiceRoleClient();
+    const { data, error } = await supabase
+      .from("components")
+      .select("id, title, description, registry_id, tags, order, type, status, source_type, schema_definition, updated_at")
+      .eq("status", "published")
+      .order("order", { ascending: true })
+      .order("created_at", { ascending: false });
 
-  const { data, error } = await supabase
-    .from("components")
-    .select("*")
-    .eq("status", "published")
-    .order("order", { ascending: true })
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  // Beta Scope: No Free-vs-Premium distinction. Signed-in users get source snippets;
-  // signed-out visitors have source snippets scrubbed at the server boundary.
-  const scrubbedData = data.map((comp) => {
-    comp.access_tier = "free";
-    if (!isAuthenticated) {
-      comp.snippets = null;
-      comp.is_locked = true;
-    } else {
-      comp.is_locked = false;
+    if (error) {
+      console.error("Failed to load public catalog from DB:", error);
+      return [];
     }
-    return comp;
-  });
 
-  return scrubbedData;
+    return (data || []).map((comp) => ({
+      id: comp.id,
+      title: comp.title,
+      description: comp.description || "",
+      registry_id: comp.registry_id,
+      tags: comp.tags || [],
+      order: comp.order ?? 0,
+      type: comp.type || "component",
+      status: comp.status,
+      source_type: comp.source_type || "react",
+      access_tier: "free",
+      is_locked: false,
+      snippets: null,
+      schema_definition: comp.schema_definition || [],
+      updated_at: comp.updated_at,
+    }));
+  },
+  ["public-components-catalog"],
+  {
+    revalidate: 3600, // Background ISR fallback (1 hr)
+    tags: ["public-components-catalog"],
+  }
+);
+
+/**
+ * Backward-compatible wrapper returning cached public catalog data immediately.
+ */
+export async function getPublishedComponents() {
+  return getPublicCatalogComponents();
 }
 
-export async function getPublishedComponentBySlug(slug: string) {
-  let isAuthenticated = false;
-  try {
-    const { createClient } = await import("@/lib/supabase/server");
-    const authSupabase = await createClient();
-    const { data: { user } } = await authSupabase.auth.getUser();
-    isAuthenticated = !!user;
-  } catch {
-    // cookies() unavailable during static generation, sitemap, or build time
-    isAuthenticated = false;
-  }
-
-  const { createServiceRoleClient } = await import("@/lib/supabase/service-role");
+/**
+ * Fetches a single published component metadata by slug or ID.
+ * Excludes heavy snippets (which are fetched on-demand via /api/components/[slug]/source).
+ */
+export async function getPublishedComponentBySlug(slug: string): Promise<PublicCatalogCard | null> {
   const supabase = createServiceRoleClient();
 
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
-  let query = supabase.from("components").select("*").eq("status", "published");
+  let query = supabase
+    .from("components")
+    .select("id, title, description, registry_id, tags, order, type, status, source_type, schema_definition")
+    .eq("status", "published");
+
   if (isUUID) {
     query = query.or(`registry_id.eq.${slug},id.eq.${slug}`);
   } else {
@@ -105,20 +128,24 @@ export async function getPublishedComponentBySlug(slug: string) {
 
   const { data, error } = await query.maybeSingle();
 
-  if (error) {
-    console.error("Error fetching component by slug:", error);
+  if (error || !data) {
+    if (error) console.error("Error fetching component by slug:", error);
     return null;
   }
 
-  if (!data) return null;
-
-  data.access_tier = "free";
-  if (!isAuthenticated) {
-    data.snippets = null;
-    data.is_locked = true;
-  } else {
-    data.is_locked = false;
-  }
-
-  return data;
+  return {
+    id: data.id,
+    title: data.title,
+    description: data.description || "",
+    registry_id: data.registry_id,
+    tags: data.tags || [],
+    order: data.order ?? 0,
+    type: data.type || "component",
+    status: data.status,
+    source_type: data.source_type || "react",
+    access_tier: "free",
+    is_locked: false,
+    snippets: null,
+    schema_definition: data.schema_definition || [],
+  };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Bookmark } from "lucide-react";
@@ -9,6 +9,60 @@ import { getPublishedComponents } from "@/lib/admin/components/queries";
 import { componentRegistry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { useCustomization } from "@/components/providers/CustomizationProvider";
+
+function ProgressiveCardPreview({
+  isPriority,
+  children,
+}: {
+  isPriority: boolean;
+  children: React.ReactNode;
+}) {
+  const [shouldRender, setShouldRender] = useState(isPriority);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (shouldRender) return;
+
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setShouldRender(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          setShouldRender(true);
+          observer.disconnect();
+        }
+      },
+      {
+        rootMargin: "300px",
+      }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [shouldRender]);
+
+  if (!shouldRender) {
+    return (
+      <div
+        ref={containerRef}
+        className="w-full min-h-[140px] flex items-center justify-center animate-pulse"
+      >
+        <div className="w-20 h-6 bg-black/5 rounded-xl" />
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="w-full flex items-center justify-center">
+      {children}
+    </div>
+  );
+}
 
 export interface ComponentsExplorerProps {
   initialComponents?: ComponentItem[];
@@ -66,15 +120,6 @@ export function ComponentsExplorer({
     }
   }, [initialComponents]);
 
-  // Refresh live components whenever the user returns to this window/tab
-  useEffect(() => {
-    const handleFocus = () => {
-      void refreshComponents();
-    };
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, [refreshComponents]);
-
   // Load components client-side if not supplied initially
   useEffect(() => {
     const init = async () => {
@@ -97,7 +142,7 @@ export function ComponentsExplorer({
     };
   }, [initialComponents, refreshComponents]);
 
-  // Listen to auth changes so components re-fetch with unlocked source code upon sign-in
+  // Keep authentication state synced
   useEffect(() => {
     let mounted = true;
     let unsubscribe: (() => void) | null = null;
@@ -108,18 +153,12 @@ export function ComponentsExplorer({
 
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (!mounted) return;
-        const authed = !!session?.user;
-        setIsAuthenticated(authed);
-        if (authed) {
-          void refreshComponents();
-        }
+        setIsAuthenticated(!!session?.user);
       });
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         if (!mounted) return;
-        const authed = !!session?.user;
-        setIsAuthenticated(authed);
-        void refreshComponents();
+        setIsAuthenticated(!!session?.user);
       });
 
       if (!mounted) {
@@ -133,7 +172,7 @@ export function ComponentsExplorer({
       mounted = false;
       if (unsubscribe) unsubscribe();
     };
-  }, [refreshComponents]);
+  }, []);
 
   // Listen for browser Back/Forward navigation
   useEffect(() => {
@@ -251,7 +290,7 @@ export function ComponentsExplorer({
     }
   };
 
-  const renderCard = (comp: ComponentItem) => {
+  const renderCard = (comp: ComponentItem, isPriority = false) => {
     const isSaved = savedIds.includes(comp.id);
     const componentSlug = comp.registry_id || comp.id;
 
@@ -291,60 +330,62 @@ export function ComponentsExplorer({
           className="relative w-full flex-1 flex items-center justify-center bg-transparent pointer-events-auto z-0 min-h-[151px] py-3 px-2 overflow-hidden cursor-default"
         >
           <div className="w-full transform flex items-center justify-center scale-[0.9]">
-            {(() => {
-              const overrides = getOverrides(comp.id);
-              const activeOverrides: Record<string, string> = {};
-              const schemaDefToUse =
-                comp.schema_definition && comp.schema_definition.length > 0
-                  ? comp.schema_definition
-                  : componentRegistry[comp.registry_id]?.schema_definition || [];
+            <ProgressiveCardPreview isPriority={isPriority}>
+              {(() => {
+                const overrides = getOverrides(comp.id);
+                const activeOverrides: Record<string, string> = {};
+                const schemaDefToUse =
+                  comp.schema_definition && comp.schema_definition.length > 0
+                    ? comp.schema_definition
+                    : componentRegistry[comp.registry_id]?.schema_definition || [];
 
-              schemaDefToUse.forEach((config: { variable: string; defaultValue?: string }) => {
-                const val =
-                  overrides[config.variable] !== undefined
-                    ? overrides[config.variable]
-                    : config.defaultValue;
-                if (config.variable && val !== undefined) {
-                  activeOverrides[config.variable] = val;
+                schemaDefToUse.forEach((config: { variable: string; defaultValue?: string }) => {
+                  const val =
+                    overrides[config.variable] !== undefined
+                      ? overrides[config.variable]
+                      : config.defaultValue;
+                  if (config.variable && val !== undefined) {
+                    activeOverrides[config.variable] = val;
+                  }
+                });
+
+                const RegistryComponent = componentRegistry[comp.registry_id]?.component;
+                if (RegistryComponent) {
+                  return (
+                    <div
+                      style={activeOverrides as React.CSSProperties}
+                      className="w-full flex items-center justify-center"
+                    >
+                      <RegistryComponent />
+                    </div>
+                  );
                 }
-              });
 
-              const RegistryComponent = componentRegistry[comp.registry_id]?.component;
-              if (RegistryComponent) {
+                const hasHtmlCss = comp.snippets?.html || comp.snippets?.css;
+                if (hasHtmlCss && comp.source_type !== "react") {
+                  return (
+                    <div className="w-[150%] h-[150%]">
+                      <LivePreviewIframe
+                        sourceType={
+                          (comp.source_type as "react" | "html_css" | "both") || "html_css"
+                        }
+                        snippets={comp.snippets || {}}
+                        schemaDefinition={comp.schema_definition}
+                        overrides={activeOverrides}
+                        className="w-full h-full border-none scale-[0.9] origin-center"
+                      />
+                    </div>
+                  );
+                }
+
                 return (
-                  <div
-                    style={activeOverrides as React.CSSProperties}
-                    className="w-full flex items-center justify-center"
-                  >
-                    <RegistryComponent />
+                  <div className="text-[#7D7F82] font-medium text-sm flex flex-col items-center gap-1">
+                    <span>Preview Unavailable</span>
+                    <span className="text-[10px]">Missing trusted registry renderer</span>
                   </div>
                 );
-              }
-
-              const hasHtmlCss = comp.snippets?.html || comp.snippets?.css;
-              if (hasHtmlCss && comp.source_type !== "react") {
-                return (
-                  <div className="w-[150%] h-[150%]">
-                    <LivePreviewIframe
-                      sourceType={
-                        (comp.source_type as "react" | "html_css" | "both") || "html_css"
-                      }
-                      snippets={comp.snippets || {}}
-                      schemaDefinition={comp.schema_definition}
-                      overrides={activeOverrides}
-                      className="w-full h-full border-none scale-[0.9] origin-center"
-                    />
-                  </div>
-                );
-              }
-
-              return (
-                <div className="text-[#7D7F82] font-medium text-sm flex flex-col items-center gap-1">
-                  <span>Preview Unavailable</span>
-                  <span className="text-[10px]">Missing trusted registry renderer</span>
-                </div>
-              );
-            })()}
+              })()}
+            </ProgressiveCardPreview>
           </div>
         </div>
 
@@ -434,7 +475,10 @@ export function ComponentsExplorer({
           <div className="flex gap-[24px] w-full items-start">
             {columnItems.map((col, colIdx) => (
               <div key={colIdx} className="flex flex-col gap-[24px] flex-1 min-w-0">
-                {col.map((comp) => renderCard(comp))}
+                {col.map((comp) => {
+                  const globalIdx = filteredComponents.indexOf(comp);
+                  return renderCard(comp, globalIdx < 6);
+                })}
               </div>
             ))}
           </div>
