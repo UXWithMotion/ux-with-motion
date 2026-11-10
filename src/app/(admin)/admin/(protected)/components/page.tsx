@@ -6,7 +6,6 @@ import { Play, Edit, Trash2, ArrowLeft, ArrowRight, X, RotateCcw } from "lucide-
 import { getAdminComponents } from "@/lib/admin/components/queries";
 import { deleteComponent, updateComponentsOrder, resetComponentsToDefaultOrder } from "@/lib/admin/components/mutations";
 import { componentRegistry } from "@/lib/registry/components";
-import { ComponentCard } from "@/components/ui/ComponentCard";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 
 export default function AdminComponentsPage() {
@@ -153,6 +152,18 @@ export default function AdminComponentsPage() {
               const isPublish = comp.status === "published";
               const registryEntry = componentRegistry[comp.registry_id];
               const RegisteredComponent = registryEntry?.component;
+
+              const schemaDefToUse =
+                comp.schema_definition && comp.schema_definition.length > 0
+                  ? comp.schema_definition
+                  : registryEntry?.schema_definition || [];
+
+              const defaultOverrides: Record<string, string> = {};
+              schemaDefToUse.forEach((config: { variable: string; defaultValue?: string }) => {
+                if (config.variable && config.defaultValue !== undefined) {
+                  defaultOverrides[config.variable] = config.defaultValue;
+                }
+              });
               
               return (
                 <div key={comp.id} className="bg-[#FBFCFD] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[12px] w-full overflow-hidden">
@@ -207,19 +218,26 @@ export default function AdminComponentsPage() {
                   </div>
                   
                   {/* Preview Area */}
-                  <div className="h-[151px] w-full bg-[#F1F1F2] relative flex items-center justify-center shrink-0 border-y border-[#DEE1E4] overflow-hidden">
-                    {RegisteredComponent ? (
-                      <ComponentCard id={comp.id} title={comp.title} tags={comp.tags?.map((t: string) => ({label: t}))}>
-                        <RegisteredComponent />
-                      </ComponentCard>
-                    ) : (
-                      <div className="w-full h-full pointer-events-none">
-                        <LivePreviewIframe 
-                          sourceType={comp.source_type} 
-                          snippets={comp.snippets || {}} 
-                        />
-                      </div>
-                    )}
+                  <div className="h-[160px] w-full bg-[#F1F1F2] relative flex items-center justify-center shrink-0 border-y border-[#DEE1E4] overflow-hidden px-4 py-3">
+                    <div className="w-full h-full flex items-center justify-center transform scale-[0.88] origin-center">
+                      {RegisteredComponent ? (
+                        <div
+                          style={defaultOverrides as React.CSSProperties}
+                          className="w-full flex items-center justify-center pointer-events-auto"
+                        >
+                          <RegisteredComponent />
+                        </div>
+                      ) : (
+                        <div className="w-full h-full pointer-events-none">
+                          <LivePreviewIframe 
+                            sourceType={comp.source_type} 
+                            snippets={comp.snippets || {}} 
+                            schemaDefinition={comp.schema_definition}
+                            overrides={defaultOverrides}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Card Footer */}
@@ -227,13 +245,6 @@ export default function AdminComponentsPage() {
                     <p className="font-sans font-medium leading-[1.2] text-[20px] text-[#454545] whitespace-nowrap truncate">
                       {comp.title}
                     </p>
-                    <div className="flex gap-[4px] h-[24px] items-center shrink-0 overflow-hidden">
-                      {(comp.tags || []).slice(0, 3).map((tag: string, i: number) => (
-                        <div key={i} className="bg-[#FBFCFD] border border-[#eef1f4] flex items-center px-[6px] py-[4px] rounded-[4px]">
-                          <p className="font-work font-normal leading-[1.2] text-[#7D7F82] text-[12px] whitespace-nowrap">{tag}</p>
-                        </div>
-                      ))}
-                    </div>
                   </div>
 
                 </div>

@@ -308,15 +308,17 @@ export function ComponentCard({ id, title, tags = DEFAULT_TAGS, children, access
               </div>
             )}
           </div>
-          <div className="flex gap-[4px] h-[24px] items-center">
-            {tags.map((tag, i) => (
-              <div key={i} className="bg-[#FBFCFD] border border-[#EEF1F4] flex h-full items-center p-[4px] rounded-[4px] overflow-hidden">
-                <span className="font-sans font-normal text-[13px] leading-[1.2] text-[#7D7F82] whitespace-nowrap">
-                  {tag.label}
-                </span>
-              </div>
-            ))}
-          </div>
+          {tags && tags.length > 0 && (
+            <div className="flex gap-[4px] h-[24px] items-center">
+              {tags.map((tag, i) => (
+                <div key={i} className="bg-[#FBFCFD] border border-[#EEF1F4] flex h-full items-center p-[4px] rounded-[4px] overflow-hidden">
+                  <span className="font-sans font-normal text-[13px] leading-[1.2] text-[#7D7F82] whitespace-nowrap">
+                    {tag.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
