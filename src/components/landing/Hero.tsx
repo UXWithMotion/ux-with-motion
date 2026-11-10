@@ -105,7 +105,7 @@ export function Hero() {
 
         {/* Title and Subtitle Container (Figma Frame 1171278874) */}
         <div className="mt-10 flex flex-col items-center max-w-[868px]">
-          <h1 className="font-title font-medium text-[34px] sm:text-[42px] md:text-[49px] leading-[1.2] md:leading-[58.8px] text-black tracking-[-0.01em] text-balance">
+          <h1 className="font-title font-bold text-[34px] sm:text-[42px] md:text-[49px] leading-[1.2] md:leading-[58.8px] text-black tracking-[-0.01em] text-balance">
             Animated UI components for React
           </h1>
 
