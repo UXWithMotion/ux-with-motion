@@ -6,6 +6,24 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { componentRegistry } from "@/lib/registry/components";
 import { saveComponentDraft, discardComponentDraft } from "./drafts";
 import { ComponentDocs, ComponentSeo } from "@/lib/registry/types";
+import fs from "fs";
+import path from "path";
+
+function syncFigmaPayloadToFile(registryId: string, figmaHtml?: string) {
+  if (!figmaHtml || !registryId) return;
+  try {
+    const targetDir = path.join(process.cwd(), "public", "figma-data");
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+    const safeSlug = registryId.replace(/[^a-zA-Z0-9_-]/g, "");
+    if (safeSlug && figmaHtml.includes("data-buffer")) {
+      fs.writeFileSync(path.join(targetDir, `${safeSlug}.html`), figmaHtml, "utf-8");
+    }
+  } catch (err) {
+    console.warn("Failed to sync figma file to public directory:", err);
+  }
+}
 
 const RESERVED_SLUGS = new Set([
   "buttons",
@@ -105,6 +123,10 @@ export async function createComponent(data: ComponentMutationPayload) {
     revalidateTag("public-components-catalog", { expire: 0 });
   }
   revalidatePath("/admin/components");
+
+  if (data.snippets?.figma) {
+    syncFigmaPayloadToFile(registryId, data.snippets.figma);
+  }
 
   return result;
 }
@@ -217,6 +239,10 @@ export async function updateComponent(id: string, data: ComponentMutationPayload
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (data.snippets?.figma) {
+    syncFigmaPayloadToFile(targetRegistryId, data.snippets.figma);
   }
 
   // Clean up any storage draft since the changes are now officially published/persisted

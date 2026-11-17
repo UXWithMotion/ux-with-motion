@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { componentRegistry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { useCustomization } from "@/components/providers/CustomizationProvider";
+import { CopyToFigmaButton } from "@/components/ui/CopyToFigmaButton";
 
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
@@ -392,6 +393,12 @@ export function ComponentModalPublic({
                           </div>
                         </button>
                       )}
+
+                      {/* Copy to Figma */}
+                      <CopyToFigmaButton
+                        slug={component.registry_id || component.id}
+                        componentTitle={component.title}
+                      />
                     </div>
                   )}
                 </div>
@@ -674,6 +681,12 @@ export function ComponentModalPublic({
                             </div>
                           </button>
                         )}
+
+                        {/* Copy to Figma Button */}
+                        <CopyToFigmaButton
+                          slug={component.registry_id || component.id}
+                          componentTitle={component.title}
+                        />
                       </div>
                     )}
                   </div>

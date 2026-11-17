@@ -136,6 +136,12 @@ export function ReviewAndPublishStep() {
               <span className="text-[#7D7F82] font-medium">Public URL</span>
               <span className="text-[#1F2123] font-mono truncate max-w-[200px]">/components/{state.registry_id}</span>
             </div>
+            <div className="flex justify-between items-center py-1 border-b border-gray-100">
+              <span className="text-[#7D7F82] font-medium">Figma Copy</span>
+              <span className={state.snippets?.figma ? "text-[#00963D] font-semibold" : "text-[#7D7F82] font-medium"}>
+                {state.snippets?.figma ? "Ready (Native Payload)" : "Not attached"}
+              </span>
+            </div>
             <div className="flex justify-between items-center py-1">
               <span className="text-[#7D7F82] font-medium">Documentation</span>
               <span className="text-[#00963D] font-semibold">

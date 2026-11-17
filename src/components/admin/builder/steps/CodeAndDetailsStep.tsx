@@ -5,6 +5,7 @@ import { useBuilder } from "../BuilderContext";
 import { Code, LayoutTemplate, Box, ChevronDown, Sparkles, AlertCircle } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { ComponentPreviewResolver } from "@/components/preview/ComponentPreviewResolver";
+import { FigmaPayloadCard } from "../FigmaPayloadCard";
 
 const CATEGORIES = [
   { id: "inputs", label: "Inputs & Pickers" },
@@ -154,6 +155,22 @@ export function CodeAndDetailsStep() {
             </div>
           </div>
         </div>
+
+        {/* 2. Paste Figma Clipboard Content (Cmd+V) */}
+        <FigmaPayloadCard
+          registryId={state.registry_id}
+          title={state.title}
+          value={state.snippets.figma || ""}
+          onChange={(val) => {
+            updateState({
+              snippets: {
+                ...state.snippets,
+                figma: val,
+              },
+            });
+          }}
+          figmaLink={state.docs?.figmaLink}
+        />
 
         {/* Source Code Editor */}
         <div className="pt-4 border-t border-[#DEE1E4] flex flex-col gap-2">

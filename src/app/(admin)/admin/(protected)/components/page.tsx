@@ -117,6 +117,12 @@ export default function AdminComponentsPage() {
               <span>Default (Newest)</span>
             </button>
             <Link
+              href="/admin/figma-capture"
+              className="bg-white border border-[#DEE1E4] hover:bg-[#F7F9FB] text-[#1F2123] px-4 py-2.5 rounded-[44px] text-sm font-medium transition-colors shadow-2xs"
+            >
+              Figma Payloads
+            </Link>
+            <Link
               href="/admin/components/create"
               className="bg-[#1F2123] text-white px-5 py-2.5 rounded-[44px] text-sm font-medium transition-opacity hover:opacity-90"
             >
