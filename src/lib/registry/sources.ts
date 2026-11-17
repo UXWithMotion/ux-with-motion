@@ -3,12 +3,21 @@ import fs from "fs";
 import path from "path";
 import { ComponentServerEntry } from "./types";
 
-// Helper to safely read reviewed component source from disk
+// Memory cache to serve file reads in microseconds (0ms disk I/O on repeats)
+const fileCache = new Map<string, string>();
+const officialSourceCache = new Map<string, ComponentServerEntry>();
+
+// Helper to safely read reviewed component source from disk with memory caching
 function readComponentFile(relativeFilePath: string): string | null {
+  if (fileCache.has(relativeFilePath)) {
+    return fileCache.get(relativeFilePath)!;
+  }
   try {
     const fullPath = path.join(/*turbopackIgnore: true*/ process.cwd(), relativeFilePath);
     if (fs.existsSync(fullPath)) {
-      return fs.readFileSync(fullPath, "utf-8");
+      const content = fs.readFileSync(fullPath, "utf-8");
+      fileCache.set(relativeFilePath, content);
+      return content;
     }
   } catch (err) {
     console.error(`Failed to read source file at ${relativeFilePath}:`, err);
@@ -72,7 +81,12 @@ export const serverSourceRegistry: Record<string, ComponentServerEntry> = {
           ""
         );
       },
-      nextjs: "components/inputs/SmoothTimePicker.tsx",
+      get nextjs() {
+        return (
+          readComponentFile("src/components/motion-components/inputs/SmoothTimePicker.tsx") ||
+          ""
+        );
+      },
     },
   },
 };
@@ -80,9 +94,15 @@ export const serverSourceRegistry: Record<string, ComponentServerEntry> = {
 export async function getOfficialComponentSource(
   registryId: string
 ): Promise<ComponentServerEntry | null> {
+  // Check memory cache first (microseconds response)
+  const cached = officialSourceCache.get(registryId);
+  if (cached) {
+    return cached;
+  }
+
   const explicitEntry = serverSourceRegistry[registryId];
   if (explicitEntry) {
-    return {
+    const entry: ComponentServerEntry = {
       registryId: explicitEntry.registryId,
       sourceRevision: explicitEntry.sourceRevision,
       snippets: {
@@ -92,22 +112,26 @@ export async function getOfficialComponentSource(
         nextjs: explicitEntry.snippets.nextjs,
       },
     };
+    officialSourceCache.set(registryId, entry);
+    return entry;
   }
 
   const filePath = officialComponentFiles[registryId];
   if (filePath) {
     const fileSource = readComponentFile(filePath);
     if (fileSource) {
-      return {
+      const entry: ComponentServerEntry = {
         registryId,
         sourceRevision: "1.0.0",
         snippets: {
           html: `<div class="${registryId}"></div>`,
           css: `/* Tailwind styled component */`,
           react: fileSource,
-          nextjs: filePath.replace(/^src\//, ""),
+          nextjs: fileSource,
         },
       };
+      officialSourceCache.set(registryId, entry);
+      return entry;
     }
   }
 

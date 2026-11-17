@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Camera, Trash2, Check, Bookmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { useRouter } from "next/navigation";
-import { ComponentModalPublic, ComponentItem } from "@/components/ui/ComponentModalPublic";
+import { ComponentModalPublic, ComponentItem, prefetchComponentSnippet } from "@/components/ui/ComponentModalPublic";
 import { componentRegistry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { useCustomization } from "@/components/providers/CustomizationProvider";
@@ -463,6 +463,9 @@ export function ProfileClient({
                         <div
                           key={comp.id}
                           onClick={() => setActiveModalComponent(comp)}
+                          onMouseEnter={() => {
+                            prefetchComponentSnippet(comp.registry_id || comp.id);
+                          }}
                           className="bg-[#F1F1F2] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip group cursor-pointer min-h-[251px]"
                         >
                           {/* Top action bar */}

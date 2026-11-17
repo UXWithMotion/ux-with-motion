@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Bookmark } from "lucide-react";
-import { ComponentModalPublic, ComponentItem } from "@/components/ui/ComponentModalPublic";
+import { ComponentModalPublic, ComponentItem, prefetchComponentSnippet } from "@/components/ui/ComponentModalPublic";
 import { getPublishedComponents } from "@/lib/admin/components/queries";
 import { componentRegistry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
@@ -298,6 +298,11 @@ export function ComponentsExplorer({
       <div
         key={comp.id}
         onClick={(e) => handleCardClick(e, comp)}
+        onMouseEnter={() => {
+          if (isAuthenticated) {
+            prefetchComponentSnippet(comp.registry_id || comp.id);
+          }
+        }}
         className="bg-[#F1F1F2] border border-[#DEE1E4] flex flex-col gap-px items-start relative rounded-[32px] w-full overflow-clip group cursor-pointer min-h-[251px] h-auto text-inherit transition-shadow hover:shadow-xs"
       >
         {/* Top action bar */}

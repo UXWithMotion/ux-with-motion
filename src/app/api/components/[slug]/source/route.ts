@@ -5,27 +5,50 @@ import { getOfficialComponentSource } from "@/lib/registry/sources";
 
 export const dynamic = "force-dynamic";
 
+// In-memory cache for dynamic DB components (5-minute TTL)
+const dbSourceCache = new Map<
+  string,
+  { registryId: string; sourceRevision: string; snippets: Record<string, string>; timestamp: number }
+>();
+const DB_CACHE_TTL_MS = 5 * 60 * 1000;
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
 
-  // 1. Authenticate user
+  // 1. Fast User Authentication
+  // First attempt instant local session check from cookie store (0ms, no network round-trip).
   const supabase = await createClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
+  const { data: sessionData } = await supabase.auth.getSession();
+  let user = sessionData.session?.user || null;
 
-  if (authError || !user) {
+  // If session is absent from cookie parser, race getUser against a 2000ms timeout
+  // to prevent hanging when Supabase remote auth has latency or cold starts.
+  if (!user) {
+    try {
+      const userPromise = supabase.auth.getUser();
+      const timeoutPromise = new Promise<{ data: { user: null }; error: Error }>((resolve) =>
+        setTimeout(() => resolve({ data: { user: null }, error: new Error("Auth timeout") }), 2000)
+      );
+      const res = await Promise.race([userPromise, timeoutPromise]);
+      if (res.data?.user) {
+        user = res.data.user;
+      }
+    } catch {
+      // Auth timeout or network error fallback
+    }
+  }
+
+  if (!user) {
     return NextResponse.json(
       { error: "Authentication required to view source code" },
       { status: 401 }
     );
   }
 
-  // 2. Fetch official source from reviewed server source registry
+  // 2. Fetch official source from reviewed server source registry (served from RAM in microseconds)
   const officialSource = await getOfficialComponentSource(slug);
   if (officialSource) {
     return NextResponse.json(
@@ -36,13 +59,30 @@ export async function GET(
       },
       {
         headers: {
-          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+          "Cache-Control": "private, max-age=3600, stale-while-revalidate=86400",
         },
       }
     );
   }
 
-  // 3. Fallback to Supabase database for dynamic components
+  // 3. Fallback to Supabase database for custom dynamic components (with in-memory cache)
+  const now = Date.now();
+  const cachedDbEntry = dbSourceCache.get(slug);
+  if (cachedDbEntry && now - cachedDbEntry.timestamp < DB_CACHE_TTL_MS) {
+    return NextResponse.json(
+      {
+        registryId: cachedDbEntry.registryId,
+        sourceRevision: cachedDbEntry.sourceRevision,
+        snippets: cachedDbEntry.snippets,
+      },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=3600, stale-while-revalidate=86400",
+        },
+      }
+    );
+  }
+
   const serviceClient = createServiceRoleClient();
   const isUUID =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
@@ -63,15 +103,23 @@ export async function GET(
     );
   }
 
+  const dbSnippets = comp.snippets || {};
+  dbSourceCache.set(slug, {
+    registryId: comp.registry_id,
+    sourceRevision: comp.updated_at || "1.0.0",
+    snippets: dbSnippets,
+    timestamp: now,
+  });
+
   return NextResponse.json(
     {
       registryId: comp.registry_id,
       sourceRevision: comp.updated_at || "1.0.0",
-      snippets: comp.snippets || {},
+      snippets: dbSnippets,
     },
     {
       headers: {
-        "Cache-Control": "private, no-cache, no-store, must-revalidate",
+        "Cache-Control": "private, max-age=3600, stale-while-revalidate=86400",
       },
     }
   );

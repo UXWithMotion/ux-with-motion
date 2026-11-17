@@ -11,6 +11,25 @@ import { CopyToFigmaButton } from "@/components/ui/CopyToFigmaButton";
 
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
+// Global in-memory cache for component source snippets (instant 0ms microsecond render across modal opens)
+export const globalSnippetCache = new Map<string, Record<string, string>>();
+
+// Helper function to prefetch snippets on card hover or idle background
+export async function prefetchComponentSnippet(slug: string): Promise<void> {
+  if (!slug || globalSnippetCache.has(slug)) return;
+  try {
+    const res = await fetch(`/api/components/${encodeURIComponent(slug)}/source`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.snippets) {
+        globalSnippetCache.set(slug, data.snippets);
+      }
+    }
+  } catch {
+    // Non-blocking prefetch failure ignored
+  }
+}
+
 export type ComponentItem = {
   id: string;
   title: string;
@@ -119,47 +138,86 @@ export function ComponentModalPublic({
 
   // User must be authenticated to view or copy source code during public beta
   const isLocked = isAuthenticated !== undefined ? !isAuthenticated : !!component.is_locked;
+  const currentSlug = component.registry_id || component.id || "";
 
-  // On-demand fetch of source snippets only when user is authenticated and modal is open
-  const [fetchedSnippets, setFetchedSnippets] = useState<Record<string, string> | null>(null);
+  // On-demand fetch of source snippets with immediate synchronous memory cache lookup (0ms)
+  const [fetchedSnippets, setFetchedSnippets] = useState<Record<string, string> | null>(() => {
+    if (component.snippets?.react || component.snippets?.nextjs) {
+      return component.snippets;
+    }
+    return currentSlug ? (globalSnippetCache.get(currentSlug) || null) : null;
+  });
   const [isLoadingSource, setIsLoadingSource] = useState<boolean>(false);
+  const [sourceFetchError, setSourceFetchError] = useState<boolean>(false);
 
   useEffect(() => {
     if (!isOpen || isLocked) {
       setFetchedSnippets(null);
+      setIsLoadingSource(false);
+      setSourceFetchError(false);
       return;
     }
 
+    if (!currentSlug) return;
+
+    // 1. If component already has snippets supplied via props
     if (component.snippets?.react || component.snippets?.nextjs) {
       setFetchedSnippets(component.snippets);
+      setIsLoadingSource(false);
+      setSourceFetchError(false);
       return;
     }
 
+    // 2. If memory cache already has the snippets, resolve synchronously (0ms)
+    if (globalSnippetCache.has(currentSlug)) {
+      setFetchedSnippets(globalSnippetCache.get(currentSlug)!);
+      setIsLoadingSource(false);
+      setSourceFetchError(false);
+      return;
+    }
+
+    // 3. Otherwise fetch from API with strict 4s timeout (never hang indefinitely)
     let active = true;
     setIsLoadingSource(true);
-    const slug = component.registry_id || component.id;
+    setSourceFetchError(false);
 
-    fetch(`/api/components/${encodeURIComponent(slug)}/source`)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 4000);
+
+    fetch(`/api/components/${encodeURIComponent(currentSlug)}/source`, {
+      signal: controller.signal,
+    })
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load source");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
       .then((data) => {
         if (active && data?.snippets) {
+          globalSnippetCache.set(currentSlug, data.snippets);
           setFetchedSnippets(data.snippets);
         }
       })
       .catch((err) => {
-        console.error("Error fetching component source:", err);
+        if (active) {
+          console.error("Error fetching component source:", err);
+          setSourceFetchError(true);
+        }
       })
       .finally(() => {
-        if (active) setIsLoadingSource(false);
+        clearTimeout(timeoutId);
+        if (active) {
+          setIsLoadingSource(false);
+        }
       });
 
     return () => {
       active = false;
+      clearTimeout(timeoutId);
+      controller.abort();
     };
-  }, [isOpen, isLocked, component.id, component.registry_id, component.snippets]);
+  }, [isOpen, isLocked, currentSlug, component.snippets]);
 
   // Fallback to registry if DB doesn't have snippets and it hasn't been locked
   const snippets = isLocked
@@ -193,6 +251,18 @@ export function ComponentModalPublic({
     if (!allComponents || allComponents.length === 0) return [];
     return allComponents.filter((c) => c.id !== component.id).slice(0, 4);
   }, [allComponents, component.id]);
+
+  // Idle background prefetch for "Other Components" so clicking any of them resolves in microseconds (0ms)
+  useEffect(() => {
+    if (!isOpen || isLocked || otherComponentsList.length === 0) return;
+    const idleTimer = setTimeout(() => {
+      otherComponentsList.forEach((c) => {
+        const s = c.registry_id || c.id;
+        if (s) prefetchComponentSnippet(s);
+      });
+    }, 400);
+    return () => clearTimeout(idleTimer);
+  }, [isOpen, isLocked, otherComponentsList]);
 
   return (
     <AnimatePresence>
@@ -343,6 +413,32 @@ export function ComponentModalPublic({
                   ) : isLoadingSource ? (
                     <div className="w-full h-[54px] sm:h-[60px] rounded-[53px] border border-[#CBCED1] px-5 sm:px-6 flex items-center justify-center bg-white text-[#7D7F82] text-[15px] font-sans animate-pulse">
                       Loading code...
+                    </div>
+                  ) : sourceFetchError && !nextjsSnippet ? (
+                    <div className="flex flex-col items-center gap-2 py-3 px-4 bg-[#F7F9FB] rounded-[24px] border border-[#DEE1E4] text-center">
+                      <span className="text-[13px] text-[#7D7F82]">
+                        Code could not be loaded.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsLoadingSource(true);
+                          setSourceFetchError(false);
+                          fetch(`/api/components/${encodeURIComponent(currentSlug)}/source`)
+                            .then((r) => r.json())
+                            .then((d) => {
+                              if (d?.snippets) {
+                                globalSnippetCache.set(currentSlug, d.snippets);
+                                setFetchedSnippets(d.snippets);
+                              }
+                            })
+                            .catch(() => setSourceFetchError(true))
+                            .finally(() => setIsLoadingSource(false));
+                        }}
+                        className="text-[13px] font-medium text-[#1F2123] underline hover:text-black cursor-pointer"
+                      >
+                        Click to retry
+                      </button>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-3">
@@ -621,6 +717,32 @@ export function ComponentModalPublic({
                         {isLoadingSource ? (
                           <div className="w-full h-[60px] rounded-[53px] border border-[#CBCED1] px-[24px] flex items-center justify-center bg-white text-[#7D7F82] text-[16px] font-sans animate-pulse">
                             Loading code...
+                          </div>
+                        ) : sourceFetchError && !snippets.nextjs && !snippets.react ? (
+                          <div className="flex flex-col items-center gap-2 py-4 px-6 bg-[#F7F9FB] rounded-[24px] border border-[#DEE1E4] text-center">
+                            <span className="text-[14px] text-[#7D7F82]">
+                              Code could not be loaded.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsLoadingSource(true);
+                                setSourceFetchError(false);
+                                fetch(`/api/components/${encodeURIComponent(currentSlug)}/source`)
+                                  .then((r) => r.json())
+                                  .then((d) => {
+                                    if (d?.snippets) {
+                                      globalSnippetCache.set(currentSlug, d.snippets);
+                                      setFetchedSnippets(d.snippets);
+                                    }
+                                  })
+                                  .catch(() => setSourceFetchError(true))
+                                  .finally(() => setIsLoadingSource(false));
+                              }}
+                              className="text-[14px] font-medium text-[#1F2123] underline hover:text-black cursor-pointer"
+                            >
+                              Click to retry
+                            </button>
                           </div>
                         ) : (() => {
                           const nextjsCode = snippets.nextjs || snippets.react;
