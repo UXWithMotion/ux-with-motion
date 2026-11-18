@@ -64,7 +64,7 @@ export default async function ComponentsPage() {
       <ComponentsExplorer
         initialComponents={components}
         header={
-          <header className="mb-10 sm:mb-12 max-w-2xl mx-auto text-center">
+          <header className="mb-8 sm:mb-10 max-w-2xl mx-auto text-center">
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-900">
               Animated UI Components for Next.js
             </h1>

@@ -64,6 +64,111 @@ function ProgressiveCardPreview({
   );
 }
 
+export type ComponentCategoryTab = "buttons" | "tabs" | "inputs" | "cards";
+
+export const CATEGORY_TABS: { id: ComponentCategoryTab; label: string }[] = [
+  { id: "buttons", label: "Buttons" },
+  { id: "tabs", label: "Tabs" },
+  { id: "inputs", label: "input fields" },
+  { id: "cards", label: "cards" },
+];
+
+const INPUT_SLUGS = new Set([
+  "smooth-card-input",
+  "ai-search-toggle",
+  "expandable-search",
+  "smooth-time-picker",
+  "smooth-date-picker",
+  "smooth-input",
+  "smooth-otp-input",
+  "smooth-password-input",
+  "smooth-phone-input",
+  "smooth-tag-input",
+  "smooth-email-input",
+  "smooth-copy-input",
+  "product-type-dropdown",
+]);
+
+const TAB_SLUGS = new Set([
+  "four-item-tabs",
+  "tabs-button",
+]);
+
+const CARD_SLUGS = new Set([
+  "pdf-action-card",
+  "image-generation-preview",
+  "live-session",
+  "live-session-invite",
+  "interactive-face",
+]);
+
+const BUTTON_SLUGS = new Set([
+  "accept-button",
+  "send-button",
+  "delete-button",
+  "bubble-arrow-button",
+  "continue-button",
+  "download-button",
+  "generate-button",
+  "get-access-button",
+  "bookmark-button",
+  "mail-button",
+  "motion-toggle",
+  "neo-delete-button",
+  "services-indicator-button",
+  "stepper-button",
+  "swipe-arrow-button",
+  "text-swipe-button",
+  "view-more-eye-button",
+]);
+
+export function getComponentCategory(comp: ComponentItem): ComponentCategoryTab {
+  const slug = (comp.registry_id || comp.id || "").toLowerCase();
+  if (INPUT_SLUGS.has(slug)) return "inputs";
+  if (TAB_SLUGS.has(slug)) return "tabs";
+  if (CARD_SLUGS.has(slug)) return "cards";
+  if (BUTTON_SLUGS.has(slug)) return "buttons";
+
+  const title = (comp.title || "").toLowerCase();
+  const tags = (comp.tags || []).map((t) => t.toLowerCase());
+
+  // Input fields (inputs, search, pickers, dropdowns, forms)
+  if (
+    slug.includes("search") ||
+    slug.includes("picker") ||
+    slug.includes("input") ||
+    slug.includes("dropdown") ||
+    title.includes("input") ||
+    title.includes("picker") ||
+    title.includes("search") ||
+    tags.some((t) => ["inputs", "input", "form", "search", "time picker", "date picker", "tag input"].includes(t))
+  ) {
+    return "inputs";
+  }
+
+  // Navigation tabs
+  if (slug.includes("tab") || title.includes("tab") || tags.includes("tabs")) {
+    return "tabs";
+  }
+
+  // Cards & Layout elements
+  if (
+    (slug.includes("card") && !slug.includes("card-input")) ||
+    (title.includes("card") && !title.includes("card number")) ||
+    tags.includes("cards")
+  ) {
+    return "cards";
+  }
+
+  // Default to buttons
+  return "buttons";
+}
+
+export function matchesCategory(comp: ComponentItem, category: ComponentCategoryTab | null): boolean {
+  if (!category) return true;
+  return getComponentCategory(comp) === category;
+}
+
 export interface ComponentsExplorerProps {
   initialComponents?: ComponentItem[];
   initialActiveSlug?: string;
@@ -81,6 +186,36 @@ export function ComponentsExplorer({
   const search = rawSearch.toLowerCase();
   const compQueryParam = searchParams?.get("component");
   const targetSlug = initialActiveSlug || compQueryParam;
+
+  const categoryParam = searchParams?.get("category")?.toLowerCase() as ComponentCategoryTab | undefined;
+  const initialCategory: ComponentCategoryTab | null =
+    categoryParam && ["buttons", "tabs", "inputs", "cards"].includes(categoryParam)
+      ? categoryParam
+      : null;
+  const [selectedCategory, setSelectedCategory] = useState<ComponentCategoryTab | null>(initialCategory);
+
+  useEffect(() => {
+    if (categoryParam && ["buttons", "tabs", "inputs", "cards"].includes(categoryParam)) {
+      setSelectedCategory(categoryParam);
+    } else if (!categoryParam) {
+      setSelectedCategory(null);
+    }
+  }, [categoryParam]);
+
+  const handleTabClick = (tabId: ComponentCategoryTab) => {
+    const nextCategory = selectedCategory === tabId ? null : tabId;
+    setSelectedCategory(nextCategory);
+
+    if (typeof window !== "undefined") {
+      const currentUrl = new URL(window.location.href);
+      if (!nextCategory) {
+        currentUrl.searchParams.delete("category");
+      } else {
+        currentUrl.searchParams.set("category", nextCategory);
+      }
+      window.history.pushState(null, "", currentUrl.pathname + (currentUrl.search ? currentUrl.search : ""));
+    }
+  };
 
   const [components, setComponents] = useState<ComponentItem[]>(initialComponents || []);
   const [isLoaded, setIsLoaded] = useState(!!initialComponents?.length);
@@ -202,6 +337,10 @@ export function ComponentsExplorer({
     .filter(Boolean);
 
   const filteredComponents = components.filter((comp) => {
+    if (!matchesCategory(comp, selectedCategory)) {
+      return false;
+    }
+
     if (searchTerms.length === 0) return true;
 
     const searchableText = [
@@ -420,6 +559,28 @@ export function ComponentsExplorer({
     <div className="w-full min-h-screen bg-[#FBFCFD] pb-32">
       <div className="w-full px-6 lg:px-[70px] pt-8">
         {header}
+
+        {/* Category Tabs Filter (Figma Node 2466:6053) */}
+        <div className="flex items-center gap-[8px] overflow-x-auto pb-1 mb-5 sm:mb-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start">
+          {CATEGORY_TABS.map((tab) => {
+            const isActive = selectedCategory === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleTabClick(tab.id)}
+                className={`px-[24px] py-[12px] rounded-[20px] font-sans font-semibold text-[14px] leading-normal whitespace-nowrap shrink-0 transition-colors select-none cursor-pointer active:scale-[0.98] ${
+                  isActive
+                    ? "bg-[#1F2123] text-white"
+                    : "bg-[#EEF1F4] text-[#1F2123] hover:bg-[#DEE1E4]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
         {rawSearch && (
           <div className="mb-6 flex items-center justify-between gap-4">
             <h2 className="font-sans text-[20px] text-[#454545]">
@@ -467,6 +628,8 @@ export function ComponentsExplorer({
             <p className="text-[20px] text-[#7D7F82] font-medium">
               {rawSearch
                 ? `No components found matching "${rawSearch}".`
+                : selectedCategory
+                ? `No components found in "${CATEGORY_TABS.find((t) => t.id === selectedCategory)?.label}".`
                 : "No published components found."}
             </p>
             {rawSearch && (
@@ -476,6 +639,22 @@ export function ComponentsExplorer({
                 className="px-5 py-2.5 bg-[#EEF1F4] hover:bg-[#DEE1E4] text-[#454545] font-sans font-medium text-[15px] rounded-full transition-colors cursor-pointer"
               >
                 Clear search
+              </button>
+            )}
+            {selectedCategory && !rawSearch && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory(null);
+                  if (typeof window !== "undefined") {
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.delete("category");
+                    window.history.pushState(null, "", currentUrl.pathname + (currentUrl.search ? currentUrl.search : ""));
+                  }
+                }}
+                className="px-5 py-2.5 bg-[#1F2123] hover:bg-black text-white font-sans font-medium text-[15px] rounded-full transition-colors cursor-pointer"
+              >
+                Show all components
               </button>
             )}
           </div>
