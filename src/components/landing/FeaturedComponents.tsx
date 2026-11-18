@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Bookmark } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { ExploreButton } from "@/components/ui/ExploreButton";
-import { ComponentModalPublic, ComponentItem, prefetchComponentSnippet } from "@/components/ui/ComponentModalPublic";
+import { ComponentModalPublic, ComponentItem, prefetchComponentSnippet, getComponentMotionDescription } from "@/components/ui/ComponentModalPublic";
 import { componentRegistry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { useCustomization } from "@/components/providers/CustomizationProvider";

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Bookmark } from "lucide-react";
-import { ComponentModalPublic, ComponentItem, prefetchComponentSnippet } from "@/components/ui/ComponentModalPublic";
+import { ComponentModalPublic, ComponentItem, prefetchComponentSnippet, getComponentMotionDescription } from "@/components/ui/ComponentModalPublic";
 import { getPublishedComponents } from "@/lib/admin/components/queries";
 import { componentRegistry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
@@ -67,11 +67,13 @@ function ProgressiveCardPreview({
 export interface ComponentsExplorerProps {
   initialComponents?: ComponentItem[];
   initialActiveSlug?: string;
+  header?: React.ReactNode;
 }
 
 export function ComponentsExplorer({
   initialComponents,
   initialActiveSlug,
+  header,
 }: ComponentsExplorerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -417,6 +419,7 @@ export function ComponentsExplorer({
   return (
     <div className="w-full min-h-screen bg-[#FBFCFD] pb-32">
       <div className="w-full px-6 lg:px-[70px] pt-8">
+        {header}
         {rawSearch && (
           <div className="mb-6 flex items-center justify-between gap-4">
             <h2 className="font-sans text-[20px] text-[#454545]">

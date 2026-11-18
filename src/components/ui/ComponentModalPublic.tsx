@@ -44,6 +44,22 @@ export type ComponentItem = {
   is_locked?: boolean;
 };
 
+// Generates a crawlable, high-intent 1-line UX/motion description for cards and metadata
+export function getComponentMotionDescription(comp: ComponentItem): string {
+  const baseDesc = comp.description?.trim();
+  if (baseDesc) {
+    const firstSentence = baseDesc.split(/\.\s+/)[0].replace(/\.+$/, "").trim();
+    if (
+      !firstSentence.toLowerCase().includes("next.js") &&
+      !firstSentence.toLowerCase().includes("figma")
+    ) {
+      return `${firstSentence}—available as Next.js code and a copyable Figma component.`;
+    }
+    return firstSentence.endsWith(".") ? firstSentence : `${firstSentence}.`;
+  }
+  return `Interactive ${comp.title.toLowerCase()} with smooth state transitions—available as Next.js code and a copyable Figma component.`;
+}
+
 export interface ComponentModalPublicProps {
   component: ComponentItem;
   isOpen: boolean;
@@ -245,6 +261,7 @@ export function ComponentModalPublic({
   };
 
   const nextjsSnippet = snippets.nextjs || snippets.react || "";
+  const modalSubtitle = component.description?.trim() || getComponentMotionDescription(component);
 
   // Filter other components for the "Other Components" section
   const otherComponentsList = useMemo(() => {
@@ -305,19 +322,38 @@ export function ComponentModalPublic({
                 ref={drawerContentRef}
                 className="flex-1 overflow-y-auto px-5 pb-12 pt-1 overscroll-contain"
               >
-                {/* Frame [2312:9383]: Title + Close Button */}
-                <div className="flex items-center justify-between pt-2 pb-3 w-full shrink-0">
-                  <Heading className="font-sans font-medium text-[27px] sm:text-[31px] text-[#1F2123] leading-tight truncate pr-2">
-                    {component.title}
-                  </Heading>
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    className="size-[32px] sm:size-[36px] rounded-full bg-[#EEF1F4] hover:bg-[#DEE1E4] flex items-center justify-center text-[#7D7F82] hover:text-[#1F2123] transition-colors shrink-0 cursor-pointer"
-                    aria-label="Close drawer"
-                  >
-                    <X size={18} />
-                  </button>
+                {/* Frame [2312:9383]: Title + Badges + Subtitle + Close Button */}
+                <div className="flex flex-col gap-2 pt-2 pb-3 w-full shrink-0">
+                  <div className="flex items-start justify-between gap-2 w-full">
+                    <Heading className="font-sans font-medium text-[24px] sm:text-[28px] text-[#1F2123] leading-tight pr-2">
+                      {component.title}
+                    </Heading>
+                    <button
+                      type="button"
+                      onClick={handleClose}
+                      className="size-[32px] sm:size-[36px] rounded-full bg-[#EEF1F4] hover:bg-[#DEE1E4] flex items-center justify-center text-[#7D7F82] hover:text-[#1F2123] transition-colors shrink-0 cursor-pointer"
+                      aria-label="Close drawer"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* Feature Badges */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-sans font-medium px-2.5 py-0.5 rounded-full bg-[#F2F3F5] border border-[#DEE1E4] text-[#454545] whitespace-nowrap shadow-2xs">
+                      Next.js Code
+                    </span>
+                    <span className="text-[11px] font-sans font-medium px-2.5 py-0.5 rounded-full bg-[#F2F3F5] border border-[#DEE1E4] text-[#454545] whitespace-nowrap shadow-2xs">
+                      Copy to Figma
+                    </span>
+                  </div>
+
+                  {/* Subtitle / UX Motion Description */}
+                  {modalSubtitle && (
+                    <p className="text-[13px] leading-relaxed text-[#7D7F82] mt-0.5">
+                      {modalSubtitle}
+                    </p>
+                  )}
                 </div>
 
                 {/* Component card [2312:9386] */}
@@ -666,26 +702,38 @@ export function ComponentModalPublic({
                 {/* Right Side: Panel Area */}
                 <div className="flex-1 flex flex-col gap-[24px] p-0 md:p-[24px] overflow-y-auto">
                   {/* Header */}
-                  <div className="flex items-center justify-between w-full shrink-0">
-                    <div className="flex items-center gap-3">
-                      <Heading className="font-sans font-medium text-[24px] md:text-[31px] text-[#454545] leading-[1.2]">
-                        {component.title}
-                      </Heading>
+                  <div className="flex flex-col gap-2.5 w-full shrink-0">
+                    <div className="flex items-start justify-between gap-4 w-full">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <Heading className="font-sans font-medium text-[24px] md:text-[31px] text-[#454545] leading-[1.2]">
+                          {component.title}
+                        </Heading>
+                        {/* Feature Badges */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] font-sans font-medium px-2.5 py-1 rounded-full bg-[#F2F3F5] border border-[#DEE1E4] text-[#454545] whitespace-nowrap shadow-2xs">
+                            Next.js Code
+                          </span>
+                          <span className="text-[12px] font-sans font-medium px-2.5 py-1 rounded-full bg-[#F2F3F5] border border-[#DEE1E4] text-[#454545] whitespace-nowrap shadow-2xs">
+                            Copy to Figma
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleClose}
+                        className="size-[32px] flex items-center justify-center text-[#7D7F82] hover:text-black transition-colors cursor-pointer shrink-0 mt-1"
+                        aria-label="Close modal"
+                      >
+                        <X size={24} />
+                      </button>
                     </div>
-                    <button
-                      onClick={handleClose}
-                      className="size-[32px] flex items-center justify-center text-[#7D7F82] hover:text-black transition-colors cursor-pointer"
-                      aria-label="Close modal"
-                    >
-                      <X size={24} />
-                    </button>
-                  </div>
 
-                  {isDetailPage && component.description?.trim() && (
-                    <p className="text-[15px] leading-relaxed text-[#7D7F82]">
-                      {component.description}
-                    </p>
-                  )}
+                    {/* Subtitle / UX Motion Description */}
+                    {modalSubtitle && (
+                      <p className="text-[14px] sm:text-[15px] leading-relaxed text-[#7D7F82] max-w-[580px]">
+                        {modalSubtitle}
+                      </p>
+                    )}
+                  </div>
 
                   {/* Tab Content */}
                   <div className="flex-1 overflow-y-auto w-full pr-2">
