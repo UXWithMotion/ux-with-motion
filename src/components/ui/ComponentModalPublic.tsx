@@ -21,7 +21,7 @@ export async function prefetchComponentSnippet(slug: string): Promise<void> {
     const res = await fetch(`/api/components/${encodeURIComponent(slug)}/source`);
     if (res.ok) {
       const data = await res.json();
-      if (data?.snippets) {
+      if (data?.snippets && (data.snippets.nextjs?.trim() || data.snippets.react?.trim())) {
         globalSnippetCache.set(slug, data.snippets);
       }
     }
@@ -158,10 +158,14 @@ export function ComponentModalPublic({
 
   // On-demand fetch of source snippets with immediate synchronous memory cache lookup (0ms)
   const [fetchedSnippets, setFetchedSnippets] = useState<Record<string, string> | null>(() => {
-    if (component.snippets?.react || component.snippets?.nextjs) {
+    if (component.snippets?.react?.trim() || component.snippets?.nextjs?.trim()) {
       return component.snippets;
     }
-    return currentSlug ? (globalSnippetCache.get(currentSlug) || null) : null;
+    const cached = currentSlug ? globalSnippetCache.get(currentSlug) : null;
+    if (cached && (cached.nextjs?.trim() || cached.react?.trim())) {
+      return cached;
+    }
+    return null;
   });
   const [isLoadingSource, setIsLoadingSource] = useState<boolean>(false);
   const [sourceFetchError, setSourceFetchError] = useState<boolean>(false);
@@ -177,7 +181,7 @@ export function ComponentModalPublic({
     if (!currentSlug) return;
 
     // 1. If component already has snippets supplied via props
-    if (component.snippets?.react || component.snippets?.nextjs) {
+    if (component.snippets?.react?.trim() || component.snippets?.nextjs?.trim()) {
       setFetchedSnippets(component.snippets);
       setIsLoadingSource(false);
       setSourceFetchError(false);
@@ -186,10 +190,13 @@ export function ComponentModalPublic({
 
     // 2. If memory cache already has the snippets, resolve synchronously (0ms)
     if (globalSnippetCache.has(currentSlug)) {
-      setFetchedSnippets(globalSnippetCache.get(currentSlug)!);
-      setIsLoadingSource(false);
-      setSourceFetchError(false);
-      return;
+      const cached = globalSnippetCache.get(currentSlug);
+      if (cached && (cached.nextjs?.trim() || cached.react?.trim())) {
+        setFetchedSnippets(cached);
+        setIsLoadingSource(false);
+        setSourceFetchError(false);
+        return;
+      }
     }
 
     // 3. Otherwise fetch from API with strict 4s timeout (never hang indefinitely)
@@ -210,9 +217,12 @@ export function ComponentModalPublic({
         return res.json();
       })
       .then((data) => {
-        if (active && data?.snippets) {
+        const hasCode = data?.snippets && (data.snippets.nextjs?.trim() || data.snippets.react?.trim());
+        if (active && hasCode) {
           globalSnippetCache.set(currentSlug, data.snippets);
           setFetchedSnippets(data.snippets);
+        } else if (active) {
+          setSourceFetchError(true);
         }
       })
       .catch((err) => {
@@ -463,9 +473,12 @@ export function ComponentModalPublic({
                           fetch(`/api/components/${encodeURIComponent(currentSlug)}/source`)
                             .then((r) => r.json())
                             .then((d) => {
-                              if (d?.snippets) {
+                              const hasCode = d?.snippets && (d.snippets.nextjs?.trim() || d.snippets.react?.trim());
+                              if (hasCode) {
                                 globalSnippetCache.set(currentSlug, d.snippets);
                                 setFetchedSnippets(d.snippets);
+                              } else {
+                                setSourceFetchError(true);
                               }
                             })
                             .catch(() => setSourceFetchError(true))
@@ -779,9 +792,12 @@ export function ComponentModalPublic({
                                 fetch(`/api/components/${encodeURIComponent(currentSlug)}/source`)
                                   .then((r) => r.json())
                                   .then((d) => {
-                                    if (d?.snippets) {
+                                    const hasCode = d?.snippets && (d.snippets.nextjs?.trim() || d.snippets.react?.trim());
+                                    if (hasCode) {
                                       globalSnippetCache.set(currentSlug, d.snippets);
                                       setFetchedSnippets(d.snippets);
+                                    } else {
+                                      setSourceFetchError(true);
                                     }
                                   })
                                   .catch(() => setSourceFetchError(true))

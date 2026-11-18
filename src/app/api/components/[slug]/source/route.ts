@@ -50,12 +50,18 @@ export async function GET(
 
   // 2. Fetch official source from reviewed server source registry (served from RAM in microseconds)
   const officialSource = await getOfficialComponentSource(slug);
-  if (officialSource) {
+  const officialReact = officialSource?.snippets?.react?.trim() || "";
+  const officialNextjs = officialSource?.snippets?.nextjs?.trim() || officialReact;
+  if (officialSource && (officialReact || officialNextjs)) {
     return NextResponse.json(
       {
         registryId: officialSource.registryId,
         sourceRevision: officialSource.sourceRevision,
-        snippets: officialSource.snippets,
+        snippets: {
+          ...officialSource.snippets,
+          react: officialReact,
+          nextjs: officialNextjs,
+        },
       },
       {
         headers: {
@@ -104,10 +110,19 @@ export async function GET(
   }
 
   const dbSnippets = comp.snippets || {};
+  const dbReact = dbSnippets.react?.trim() || dbSnippets.nextjs?.trim() || "";
+  const dbNextjs = dbSnippets.nextjs?.trim() || dbSnippets.react?.trim() || "";
+
+  const finalSnippets = {
+    ...dbSnippets,
+    react: dbReact,
+    nextjs: dbNextjs,
+  };
+
   dbSourceCache.set(slug, {
     registryId: comp.registry_id,
     sourceRevision: comp.updated_at || "1.0.0",
-    snippets: dbSnippets,
+    snippets: finalSnippets,
     timestamp: now,
   });
 
@@ -115,7 +130,7 @@ export async function GET(
     {
       registryId: comp.registry_id,
       sourceRevision: comp.updated_at || "1.0.0",
-      snippets: dbSnippets,
+      snippets: finalSnippets,
     },
     {
       headers: {

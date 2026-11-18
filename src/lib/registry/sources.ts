@@ -13,11 +13,20 @@ function readComponentFile(relativeFilePath: string): string | null {
     return fileCache.get(relativeFilePath)!;
   }
   try {
-    const fullPath = path.join(/*turbopackIgnore: true*/ process.cwd(), relativeFilePath);
-    if (fs.existsSync(fullPath)) {
-      const content = fs.readFileSync(fullPath, "utf-8");
-      fileCache.set(relativeFilePath, content);
-      return content;
+    const searchRoots = [
+      process.cwd(),
+      path.resolve(process.cwd(), ".."),
+      path.resolve(__dirname, "../../../.."),
+    ];
+    for (const root of searchRoots) {
+      const fullPath = path.join(/*turbopackIgnore: true*/ root, relativeFilePath);
+      if (fs.existsSync(/*turbopackIgnore: true*/ fullPath)) {
+        const content = fs.readFileSync(/*turbopackIgnore: true*/ fullPath, "utf-8");
+        if (content && content.trim()) {
+          fileCache.set(relativeFilePath, content);
+          return content;
+        }
+      }
     }
   } catch (err) {
     console.error(`Failed to read source file at ${relativeFilePath}:`, err);
@@ -96,30 +105,34 @@ export async function getOfficialComponentSource(
 ): Promise<ComponentServerEntry | null> {
   // Check memory cache first (microseconds response)
   const cached = officialSourceCache.get(registryId);
-  if (cached) {
+  if (cached && (cached.snippets.react?.trim() || cached.snippets.nextjs?.trim())) {
     return cached;
   }
 
   const explicitEntry = serverSourceRegistry[registryId];
   if (explicitEntry) {
-    const entry: ComponentServerEntry = {
-      registryId: explicitEntry.registryId,
-      sourceRevision: explicitEntry.sourceRevision,
-      snippets: {
-        html: explicitEntry.snippets.html,
-        css: explicitEntry.snippets.css,
-        react: explicitEntry.snippets.react,
-        nextjs: explicitEntry.snippets.nextjs,
-      },
-    };
-    officialSourceCache.set(registryId, entry);
-    return entry;
+    const reactSource = explicitEntry.snippets.react?.trim() || "";
+    const nextjsSource = explicitEntry.snippets.nextjs?.trim() || reactSource;
+    if (reactSource || nextjsSource) {
+      const entry: ComponentServerEntry = {
+        registryId: explicitEntry.registryId,
+        sourceRevision: explicitEntry.sourceRevision,
+        snippets: {
+          html: explicitEntry.snippets.html,
+          css: explicitEntry.snippets.css,
+          react: reactSource,
+          nextjs: nextjsSource,
+        },
+      };
+      officialSourceCache.set(registryId, entry);
+      return entry;
+    }
   }
 
   const filePath = officialComponentFiles[registryId];
   if (filePath) {
     const fileSource = readComponentFile(filePath);
-    if (fileSource) {
+    if (fileSource && fileSource.trim()) {
       const entry: ComponentServerEntry = {
         registryId,
         sourceRevision: "1.0.0",
