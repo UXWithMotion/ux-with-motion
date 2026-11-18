@@ -66,10 +66,10 @@ export default async function ComponentsPage() {
         header={
           <header className="mb-8 sm:mb-10 max-w-2xl mx-auto text-center">
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-900">
-              Animated UI Components for Next.js
+              Motion UI Component Library
             </h1>
             <p className="mt-2 text-base text-neutral-500 max-w-xl mx-auto">
-              30+ interactive micro-interactions. Copy Next.js code or paste editable layers directly into Figma.
+              30+ interactive buttons, inputs, and toggles. One-click copy for Next.js code and Figma.
             </p>
           </header>
         }

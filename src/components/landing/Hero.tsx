@@ -106,11 +106,11 @@ export function Hero() {
         {/* Title and Subtitle Container (Figma Frame 1171278874) */}
         <div className="mt-10 flex flex-col items-center max-w-[868px]">
           <h1 className="font-title font-bold text-[34px] sm:text-[42px] md:text-[49px] leading-[1.2] md:leading-[58.8px] text-black tracking-[-0.01em] text-balance">
-            Animated UI components for React
+            Animated UI components for React & Figma
           </h1>
 
           <p className="mt-3 font-sans font-normal text-[16px] sm:text-[18px] md:text-[20px] leading-[1.5] md:leading-[30px] text-[#7D7F82] max-w-[778px] text-balance">
-            Explore animated inputs, buttons, and micro-interactions. Try them live, then sign in to copy the code for your next project.
+            Explore animated inputs, buttons, and micro-interactions. Try them live, then copy the Next.js code or paste directly into Figma.
           </p>
         </div>
 
