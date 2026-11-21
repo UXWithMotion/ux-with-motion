@@ -143,6 +143,26 @@ export default function FigmaCaptureAdminPage() {
     }
   };
 
+  const handleDeletePayload = async () => {
+    if (!confirm(`Are you sure you want to delete the saved Figma payload for ${selectedSlug}?`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/components/${selectedSlug}/figma`, { method: "DELETE" });
+      if (res.ok) {
+        setSavedFiles((prev) => ({ ...prev, [selectedSlug]: false }));
+        setPastedHtml("");
+        setDetectedInfo(null);
+        setSaveStatus("Saved Figma payload deleted successfully.");
+      } else {
+        const data = await res.json();
+        alert("Failed to delete payload: " + (data.error || "Unknown error"));
+      }
+    } catch (err: any) {
+      alert("Failed to delete payload: " + err.message);
+    }
+  };
+
   const figmaDirectUrl = FIGMA_NODE_MAP[selectedSlug] || "https://www.figma.com/design/3MlafJ3S3cD7vfSGUBlodn/Ux-with-motion";
 
   return (
@@ -201,21 +221,30 @@ export default function FigmaCaptureAdminPage() {
               1. Select Target Component
             </label>
             {savedFiles[selectedSlug] && (
-              <button
-                type="button"
-                onClick={handleTestCopy}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1F2123] hover:text-black underline cursor-pointer"
-              >
-                {testedCopy ? (
-                  <span className="text-green-600 flex items-center gap-1">
-                    <Check size={14} /> Copied to system clipboard! Paste in Figma (⌘V)
-                  </span>
-                ) : (
-                  <>
-                    <Play size={12} /> Test Copy Saved Payload
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleTestCopy}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1F2123] hover:text-black underline cursor-pointer"
+                >
+                  {testedCopy ? (
+                    <span className="text-green-600 flex items-center gap-1">
+                      <Check size={14} /> Copied to system clipboard! Paste in Figma (⌘V)
+                    </span>
+                  ) : (
+                    <>
+                      <Play size={12} /> Test Copy Saved Payload
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeletePayload}
+                  className="text-xs text-red-600 hover:text-red-700 underline cursor-pointer"
+                >
+                  Delete Payload
+                </button>
+              </div>
             )}
           </div>
 

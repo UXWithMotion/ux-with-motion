@@ -29,25 +29,27 @@ export function FigmaPayloadCard({
   const [testedCopy, setTestedCopy] = useState(false);
   const [showRawText, setShowRawText] = useState(false);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const isDeletedRef = React.useRef(false);
 
-  // If local value is empty, try loading existing saved file from /api/components/[slug]/figma
+  // Initial load: If local value is empty, try loading existing saved file once on mount
   useEffect(() => {
-    if (!value && registryId) {
-      let isMounted = true;
+    let isMounted = true;
+    if (!value && registryId && !isDeletedRef.current) {
       fetch(`/api/components/${registryId}/figma`)
         .then((res) => (res.ok ? res.text() : null))
         .then((html) => {
-          if (isMounted && html && html.includes("data-buffer")) {
+          if (isMounted && !isDeletedRef.current && html && html.includes("data-buffer")) {
             onChange(html);
           }
         })
         .catch(() => {});
-
-      return () => {
-        isMounted = false;
-      };
     }
-  }, [registryId, value, onChange]);
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registryId]);
 
   // Global paste handler: if user copies inside Figma and presses Cmd+V anywhere on this step
   useEffect(() => {
@@ -57,6 +59,7 @@ export function FigmaPayloadCard({
       if (html && (html.includes("data-buffer") || html.includes("data-metadata") || html.includes("<!--(figma)"))) {
         e.preventDefault();
         e.stopPropagation();
+        isDeletedRef.current = false;
         processPayload(html);
       }
     };
@@ -66,6 +69,7 @@ export function FigmaPayloadCard({
   }, [registryId, onChange]);
 
   const processPayload = async (html: string) => {
+    isDeletedRef.current = false;
     onChange(html);
     const size = Math.round((html.length / 1024) * 10) / 10;
     setSaveNotice(`✓ Captured ${size} KB Figma payload!`);
@@ -85,6 +89,46 @@ export function FigmaPayloadCard({
       } catch (err) {
         console.warn("Auto-save figma payload failed:", err);
       }
+    }
+  };
+
+  const handleDeletePayload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    isDeletedRef.current = true;
+    setIsDeleting(true);
+    setSaveNotice(null);
+
+    try {
+      if (registryId) {
+        await fetch(`/api/components/${registryId}/figma`, {
+          method: "DELETE",
+        });
+      }
+      onChange("");
+      setSaveNotice("✓ Payload removed from server and memory");
+      setTimeout(() => setSaveNotice(null), 3500);
+    } catch (err) {
+      console.error("Failed to delete Figma payload:", err);
+      onChange("");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleRawChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    if (!val.trim()) {
+      isDeletedRef.current = true;
+      if (registryId) {
+        fetch(`/api/components/${registryId}/figma`, { method: "DELETE" }).catch(() => {});
+      }
+      onChange("");
+      setSaveNotice("✓ Payload cleared");
+      setTimeout(() => setSaveNotice(null), 3000);
+    } else {
+      processPayload(val);
     }
   };
 
@@ -207,11 +251,12 @@ export function FigmaPayloadCard({
 
               <button
                 type="button"
-                onClick={() => onChange("")}
-                className="p-2 text-[#7D7F82] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                onClick={handleDeletePayload}
+                disabled={isDeleting}
+                className="p-2 text-[#7D7F82] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                 title="Remove payload"
               >
-                <Trash2 size={16} />
+                <Trash2 size={16} className={isDeleting ? "animate-spin text-red-500" : ""} />
               </button>
             </div>
           </div>
@@ -249,7 +294,7 @@ export function FigmaPayloadCard({
         {showRawText && (
           <textarea
             value={value}
-            onChange={(e) => processPayload(e.target.value)}
+            onChange={handleRawChange}
             placeholder="<meta charset='utf-8'><span data-metadata=..."
             rows={3}
             className="w-full p-3 font-mono text-xs rounded-xl border border-[#DEE1E4] bg-[#F7F9FB] focus:outline-none focus:ring-1 focus:ring-black"

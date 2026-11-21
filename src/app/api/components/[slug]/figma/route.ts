@@ -100,3 +100,38 @@ export async function POST(
     return NextResponse.json({ error: "Failed to save Figma payload" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { slug } = await params;
+  if (!slug) {
+    return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
+  }
+
+  try {
+    const safeSlug = slug.replace(/[^a-zA-Z0-9_-]/g, "");
+    const targetDir = path.join(process.cwd(), "public", "figma-data");
+    const filePath = path.join(targetDir, `${safeSlug}.html`);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    return NextResponse.json({
+      success: true,
+      slug: safeSlug,
+      message: "Figma payload deleted successfully",
+    });
+  } catch (error) {
+    console.error("Failed to delete Figma payload:", error);
+    return NextResponse.json({ error: "Failed to delete Figma payload" }, { status: 500 });
+  }
+}

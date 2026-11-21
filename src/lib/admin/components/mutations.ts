@@ -10,15 +10,22 @@ import fs from "fs";
 import path from "path";
 
 function syncFigmaPayloadToFile(registryId: string, figmaHtml?: string) {
-  if (!figmaHtml || !registryId) return;
+  if (!registryId) return;
   try {
     const targetDir = path.join(process.cwd(), "public", "figma-data");
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
-    }
     const safeSlug = registryId.replace(/[^a-zA-Z0-9_-]/g, "");
-    if (safeSlug && figmaHtml.includes("data-buffer")) {
-      fs.writeFileSync(path.join(targetDir, `${safeSlug}.html`), figmaHtml, "utf-8");
+    if (!safeSlug) return;
+    const filePath = path.join(targetDir, `${safeSlug}.html`);
+
+    if (figmaHtml && figmaHtml.includes("data-buffer")) {
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+      fs.writeFileSync(filePath, figmaHtml, "utf-8");
+    } else if (figmaHtml === "" || figmaHtml === null) {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
     }
   } catch (err) {
     console.warn("Failed to sync figma file to public directory:", err);
@@ -241,7 +248,7 @@ export async function updateComponent(id: string, data: ComponentMutationPayload
     throw new Error(error.message);
   }
 
-  if (data.snippets?.figma) {
+  if (data.snippets?.figma !== undefined) {
     syncFigmaPayloadToFile(targetRegistryId, data.snippets.figma);
   }
 

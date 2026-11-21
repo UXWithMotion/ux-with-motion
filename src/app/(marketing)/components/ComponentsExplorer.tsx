@@ -97,6 +97,7 @@ const TAB_SLUGS = new Set([
 ]);
 
 const CARD_SLUGS = new Set([
+  "image-compare",
   "pdf-action-card",
   "image-generation-preview",
   "live-session",

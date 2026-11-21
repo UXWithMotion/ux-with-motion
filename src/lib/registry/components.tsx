@@ -235,7 +235,49 @@ export const AiReasoningDrawer = dynamic(
   { loading: SkeletonLoader }
 );
 
+export const ImageCompare = dynamic(
+  () => import("@/components/motion-components/ImageCompare").then((m) => m.ImageCompare),
+  { loading: SkeletonLoader }
+);
+
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "image-compare": {
+    registryId: "image-compare",
+    name: "Image Compare",
+    category: "Cards",
+    component: ImageCompare,
+    schema_definition: [
+      {
+        variable: "labels",
+        label: "Show Labels",
+        type: "boolean",
+        defaultValue: "true",
+      },
+      {
+        variable: "beforeLabel",
+        label: "Left Label",
+        type: "text",
+        defaultValue: "Low resolution",
+      },
+      {
+        variable: "afterLabel",
+        label: "Right Label",
+        type: "text",
+        defaultValue: "High resolution",
+      },
+      {
+        variable: "corner",
+        label: "Corner Radius",
+        type: "number",
+        defaultValue: "20",
+      },
+    ],
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
   "ai-reasoning-drawer": {
     registryId: "ai-reasoning-drawer",
     name: "AI Reasoning Drawer",
