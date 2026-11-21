@@ -71,7 +71,7 @@ function ReplayIcon({ className = "" }: { className?: string }) {
 
 export function AiReasoningDrawer({
   className = "",
-  defaultOpen = true,
+  defaultOpen = false,
   isOpen: controlledOpen,
   onToggle,
   label = "Thinking…",
@@ -83,12 +83,19 @@ export function AiReasoningDrawer({
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const activeThoughts = thoughts && thoughts.length > 0 ? thoughts : DEFAULT_THOUGHTS;
 
-  const [isThinking, setIsThinking] = useState(true);
-  const [streamIndex, setStreamIndex] = useState<number>(1);
-  const [elapsedSeconds, setElapsedSeconds] = useState<number>(1);
+  const [isThinking, setIsThinking] = useState(false);
+  const [streamIndex, setStreamIndex] = useState<number>(activeThoughts.length);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(8);
   const [isReplaying, setIsReplaying] = useState(false);
 
-  // Thinking streaming & timer cycle
+  // Sync internalOpen if defaultOpen changes
+  useEffect(() => {
+    if (controlledOpen === undefined) {
+      setInternalOpen(defaultOpen);
+    }
+  }, [defaultOpen, controlledOpen]);
+
+  // Thinking streaming & timer cycle (triggered by Replay)
   useEffect(() => {
     if (!isThinking) return;
 
@@ -139,19 +146,19 @@ export function AiReasoningDrawer({
   };
 
   return (
-    <div className={`w-full max-w-[620px] flex flex-col items-start font-sans select-none ${className}`}>
+    <div className={`w-full max-w-full sm:max-w-[480px] flex flex-col items-start font-sans select-none px-1 ${className}`}>
       {/* Header Row: Always clickable to collapse / open via Up / Down arrow */}
-      <div className="w-full flex items-center justify-between mb-[10px]">
+      <div className="w-full flex items-center justify-between gap-2 mb-2">
         <button
           type="button"
           onClick={toggleOpen}
           aria-expanded={isOpen}
-          className="group flex items-center gap-[6px] py-1 text-left cursor-pointer focus:outline-none"
+          className="group flex items-center gap-1.5 py-1 text-left cursor-pointer focus:outline-none min-w-0"
         >
           {/* Label: Fixed Crisp Light-Theme Shimmer during thinking, Solid when completed */}
           {isThinking ? (
             <span
-              className="font-sans font-normal text-[14px] leading-normal text-transparent bg-clip-text animate-shimmer-sweep select-none"
+              className="font-sans font-normal text-[14px] leading-normal text-transparent bg-clip-text animate-shimmer-sweep select-none whitespace-nowrap"
               style={{
                 backgroundImage:
                   "linear-gradient(90deg, #8a8a97 0%, #8a8a97 30%, #111827 50%, #8a8a97 70%, #8a8a97 100%)",
@@ -161,7 +168,7 @@ export function AiReasoningDrawer({
               {label}
             </span>
           ) : (
-            <span className="font-sans font-normal text-[14px] leading-normal text-[#8a8a97] group-hover:text-[#1F2123] transition-colors">
+            <span className="font-sans font-normal text-[14px] leading-normal text-[#8a8a97] group-hover:text-[#1F2123] transition-colors whitespace-nowrap">
               {doneLabel || `Thought for ${elapsedSeconds}s`}
             </span>
           )}
@@ -170,7 +177,7 @@ export function AiReasoningDrawer({
           <ChevronArrow isOpen={isOpen} />
 
           {/* Elapsed Timer Counter */}
-          <span className="text-[12px] font-normal text-[#8a8a97] font-mono tabular-nums ml-1">
+          <span className="text-[12px] font-normal text-[#8a8a97] font-mono tabular-nums ml-0.5">
             {elapsedSeconds}s
           </span>
         </button>
@@ -179,7 +186,7 @@ export function AiReasoningDrawer({
         <button
           type="button"
           onClick={handleReplay}
-          className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[#8a8a97] hover:text-[#1F2123] hover:bg-black/[0.04] active:scale-95 transition-all cursor-pointer text-[12px]"
+          className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[#8a8a97] hover:text-[#1F2123] hover:bg-black/[0.04] active:scale-95 transition-all cursor-pointer text-[12px] shrink-0"
           title="Replay reasoning animation"
         >
           <div
@@ -202,11 +209,11 @@ export function AiReasoningDrawer({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full overflow-hidden"
+            className="w-full max-w-full overflow-hidden"
           >
-            <div className="w-full relative rounded-[12px] bg-[#f7f7f8] border border-[#e5e5e8] px-[16px] pt-[6px] pb-[14px]">
+            <div className="w-full relative rounded-[12px] bg-[#f7f7f8] border border-[#e5e5e8] px-3.5 py-3">
               {/* Streaming Thought Lines */}
-              <div className="flex flex-col w-full">
+              <div className="flex flex-col w-full gap-2">
                 {activeThoughts.map((thought, idx) => {
                   const isVisible = idx < streamIndex;
                   const isLatest = idx === streamIndex - 1;
@@ -214,18 +221,18 @@ export function AiReasoningDrawer({
                   return (
                     <motion.div
                       key={idx}
-                      initial={{ opacity: 0, y: 4 }}
+                      initial={{ opacity: 0, y: 3 }}
                       animate={{
-                        opacity: isVisible ? (idx === 0 ? 0.45 : 1) : 0,
-                        y: isVisible ? 0 : 4,
+                        opacity: isVisible ? (idx === 0 ? 0.5 : 1) : 0,
+                        y: isVisible ? 0 : 3,
                       }}
-                      transition={{ duration: 0.3, ease: "easeOut" }}
-                      className={`pt-[8px] relative w-full flex items-start ${
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                      className={`w-full flex items-start ${
                         !isVisible ? "hidden" : ""
                       }`}
                     >
                       <p
-                        className={`flex-1 font-sans font-normal text-[13.5px] leading-[1.6] [word-break:break-word] ${
+                        className={`flex-1 font-sans font-normal text-[13px] sm:text-[13.5px] leading-[1.55] [word-break:break-word] [overflow-wrap:anywhere] ${
                           idx === 0 ? "text-[#8a8a97]" : "text-[#374151]"
                         }`}
                       >

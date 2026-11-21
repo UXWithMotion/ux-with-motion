@@ -246,7 +246,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
         variable: "defaultOpen",
         label: "Default Open",
         type: "boolean",
-        defaultValue: "true",
+        defaultValue: "false",
       },
       {
         variable: "label",
@@ -283,7 +283,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
         variable: "defaultOpen",
         label: "Default Open",
         type: "boolean",
-        defaultValue: "true",
+        defaultValue: "false",
       },
       {
         variable: "label",
