@@ -348,16 +348,6 @@ export function ComponentModalPublic({
                     </button>
                   </div>
 
-                  {/* Feature Badges */}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[11px] font-sans font-medium px-2.5 py-0.5 rounded-full bg-[#F2F3F5] border border-[#DEE1E4] text-[#454545] whitespace-nowrap shadow-2xs">
-                      Next.js Code
-                    </span>
-                    <span className="text-[11px] font-sans font-medium px-2.5 py-0.5 rounded-full bg-[#F2F3F5] border border-[#DEE1E4] text-[#454545] whitespace-nowrap shadow-2xs">
-                      Copy to Figma
-                    </span>
-                  </div>
-
                   {/* Subtitle / UX Motion Description */}
                   {modalSubtitle && (
                     <p className="text-[13px] leading-relaxed text-[#7D7F82] mt-0.5">
@@ -717,20 +707,9 @@ export function ComponentModalPublic({
                   {/* Header */}
                   <div className="flex flex-col gap-2.5 w-full shrink-0">
                     <div className="flex items-start justify-between gap-4 w-full">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <Heading className="font-sans font-medium text-[24px] md:text-[31px] text-[#454545] leading-[1.2]">
-                          {component.title}
-                        </Heading>
-                        {/* Feature Badges */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-[12px] font-sans font-medium px-2.5 py-1 rounded-full bg-[#F2F3F5] border border-[#DEE1E4] text-[#454545] whitespace-nowrap shadow-2xs">
-                            Next.js Code
-                          </span>
-                          <span className="text-[12px] font-sans font-medium px-2.5 py-1 rounded-full bg-[#F2F3F5] border border-[#DEE1E4] text-[#454545] whitespace-nowrap shadow-2xs">
-                            Copy to Figma
-                          </span>
-                        </div>
-                      </div>
+                      <Heading className="font-sans font-medium text-[24px] md:text-[31px] text-[#454545] leading-[1.2]">
+                        {component.title}
+                      </Heading>
                       <button
                         onClick={handleClose}
                         className="size-[32px] flex items-center justify-center text-[#7D7F82] hover:text-black transition-colors cursor-pointer shrink-0 mt-1"
