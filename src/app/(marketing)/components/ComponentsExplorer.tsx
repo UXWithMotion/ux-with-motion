@@ -119,6 +119,7 @@ const BUTTON_SLUGS = new Set([
   "motion-toggle",
   "neo-delete-button",
   "services-indicator-button",
+  "slide-to-confirm",
   "stepper-button",
   "swipe-arrow-button",
   "text-swipe-button",

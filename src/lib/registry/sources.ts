@@ -51,6 +51,7 @@ export const officialComponentFiles: Record<string, string> = {
   "ai-reasoning-drawer": "src/components/motion-components/AiReasoningDrawer.tsx",
   "ai-reasoning": "src/components/motion-components/AiReasoningDrawer.tsx",
   "image-compare": "src/components/motion-components/ImageCompare.tsx",
+  "slide-to-confirm": "src/components/motion-components/buttons/SlideToConfirm.tsx",
   "live-session-invite": "src/components/motion-components/LiveSessionInvite.tsx",
   "live-session": "src/components/motion-components/LiveSession.tsx",
   "view-more-eye-button": "src/components/motion-components/buttons/ViewMoreEyeButton.tsx",

@@ -240,7 +240,43 @@ export const ImageCompare = dynamic(
   { loading: SkeletonLoader }
 );
 
+export const SlideToConfirm = dynamic(
+  () => import("@/components/motion-components/buttons/SlideToConfirm").then((m) => m.SlideToConfirm),
+  { loading: SkeletonLoader }
+);
+
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "slide-to-confirm": {
+    registryId: "slide-to-confirm",
+    name: "Slide to Confirm",
+    category: "Buttons",
+    component: SlideToConfirm,
+    schema_definition: [
+      {
+        variable: "label",
+        label: "Track Label",
+        type: "text",
+        defaultValue: "Slide to confirm",
+      },
+      {
+        variable: "confirmedLabel",
+        label: "Confirmed Label",
+        type: "text",
+        defaultValue: "Confirm",
+      },
+      {
+        variable: "disabled",
+        label: "Disabled",
+        type: "boolean",
+        defaultValue: "false",
+      },
+    ],
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
   "image-compare": {
     registryId: "image-compare",
     name: "Image Compare",
