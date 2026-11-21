@@ -27,7 +27,7 @@ export async function getAdminComponents() {
   
   const { data, error } = await supabase
     .from("components")
-    .select("*")
+    .select("id, title, description, registry_id, tags, order, type, status, source_type, schema_definition, access_tier, created_at, updated_at")
     .order("order", { ascending: true })
     .order("created_at", { ascending: false });
 

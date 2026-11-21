@@ -16,17 +16,20 @@ export default function AdminComponentsPage() {
   const [isReordering, setIsReordering] = useState(false);
   const [orderNotice, setOrderNotice] = useState("");
 
-  useEffect(() => {
-    async function loadComponents() {
-      try {
-        const data = await getAdminComponents();
-        setComponents(data || []);
-      } catch (err: any) {
-        setError(err.message || "Failed to load components");
-      } finally {
-        setIsLoaded(true);
-      }
+  const loadComponents = async () => {
+    setIsLoaded(false);
+    setError("");
+    try {
+      const data = await getAdminComponents();
+      setComponents(data || []);
+    } catch (err: any) {
+      setError(err.message || "Failed to load components");
+    } finally {
+      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
     loadComponents();
   }, []);
 
@@ -91,8 +94,6 @@ export default function AdminComponentsPage() {
     }
   };
 
-  if (!isLoaded) return <div className="flex-1 bg-[#F7F9FB]" />;
-
   return (
     <div className="flex flex-col h-full bg-[#F7F9FB] relative">
       <header className="h-[63px] bg-[#FBFCFD] border-b border-[#DEE1E4] px-8 flex items-center justify-between shrink-0">
@@ -104,8 +105,8 @@ export default function AdminComponentsPage() {
             </span>
           )}
         </div>
-        {components.length > 0 && (
-          <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
+          {components.length > 0 && (
             <button
               type="button"
               onClick={handleResetToDefault}
@@ -116,31 +117,53 @@ export default function AdminComponentsPage() {
               <RotateCcw className={`w-3.5 h-3.5 text-[#7D7F82] ${isReordering ? "animate-spin" : ""}`} />
               <span>Default (Newest)</span>
             </button>
-            <Link
-              href="/admin/figma-capture"
-              className="bg-white border border-[#DEE1E4] hover:bg-[#F7F9FB] text-[#1F2123] px-4 py-2.5 rounded-[44px] text-sm font-medium transition-colors shadow-2xs"
-            >
-              Figma Payloads
-            </Link>
-            <Link
-              href="/admin/components/create"
-              className="bg-[#1F2123] text-white px-5 py-2.5 rounded-[44px] text-sm font-medium transition-opacity hover:opacity-90"
-            >
-              Create component
-            </Link>
-          </div>
-        )}
+          )}
+          <Link
+            href="/admin/figma-capture"
+            className="bg-white border border-[#DEE1E4] hover:bg-[#F7F9FB] text-[#1F2123] px-4 py-2.5 rounded-[44px] text-sm font-medium transition-colors shadow-2xs"
+          >
+            Figma Payloads
+          </Link>
+          <Link
+            href="/admin/components/create"
+            className="bg-[#1F2123] text-white px-5 py-2.5 rounded-[44px] text-sm font-medium transition-opacity hover:opacity-90"
+          >
+            Create component
+          </Link>
+        </div>
       </header>
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-8 flex flex-col">
         {error && (
-          <div className="mb-4 p-4 text-red-500 bg-red-50 rounded-lg">
-            {error}
+          <div className="mb-4 p-4 text-red-600 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between">
+            <span>{error}</span>
+            <button
+              onClick={loadComponents}
+              className="px-3 py-1 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
           </div>
         )}
-        
-        {components.length === 0 ? (
+
+        {!isLoaded ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[24px]">
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-[#FBFCFD] border border-[#DEE1E4] rounded-[12px] h-[270px] animate-pulse p-4 flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-16 h-5 bg-[#EEF1F4] rounded" />
+                  <div className="w-10 h-5 bg-[#EEF1F4] rounded" />
+                </div>
+                <div className="h-[140px] bg-[#EEF1F4] rounded-[8px]" />
+                <div className="w-36 h-5 bg-[#EEF1F4] rounded" />
+              </div>
+            ))}
+          </div>
+        ) : components.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center">
             <h2 className="font-title font-bold text-[32px] sm:text-[44px] text-[#454545] tracking-[-0.02em] mb-8 text-center max-w-[600px]">
               Start your component creation journey

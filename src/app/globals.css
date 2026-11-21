@@ -84,6 +84,19 @@ body {
   animation: spin-slow 20s linear infinite;
 }
 
+@keyframes shimmer-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-shimmer-sweep {
+  animation: shimmer-sweep 2.8s linear infinite;
+}
+
 @utility font-sans {
   font-family: var(--font-plus-jakarta), sans-serif;
 }

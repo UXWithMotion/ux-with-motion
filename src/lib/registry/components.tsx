@@ -230,7 +230,86 @@ export const ServicesIndicatorButton = dynamic(
   { loading: SkeletonLoader }
 );
 
+export const AiReasoningDrawer = dynamic(
+  () => import("@/components/motion-components/AiReasoningDrawer").then((m) => m.AiReasoningDrawer),
+  { loading: SkeletonLoader }
+);
+
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "ai-reasoning-drawer": {
+    registryId: "ai-reasoning-drawer",
+    name: "AI Reasoning Drawer",
+    category: "Inputs",
+    component: AiReasoningDrawer,
+    schema_definition: [
+      {
+        variable: "defaultOpen",
+        label: "Default Open",
+        type: "boolean",
+        defaultValue: "true",
+      },
+      {
+        variable: "label",
+        label: "Thinking Label",
+        type: "text",
+        defaultValue: "Thinking…",
+      },
+      {
+        variable: "doneLabel",
+        label: "Done Label",
+        type: "text",
+        defaultValue: "Thought for 8s",
+      },
+      {
+        variable: "autoPlay",
+        label: "Auto Play",
+        type: "boolean",
+        defaultValue: "true",
+      },
+    ],
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
+  "ai-reasoning": {
+    registryId: "ai-reasoning",
+    name: "AI Reasoning Drawer",
+    category: "Inputs",
+    component: AiReasoningDrawer,
+    schema_definition: [
+      {
+        variable: "defaultOpen",
+        label: "Default Open",
+        type: "boolean",
+        defaultValue: "true",
+      },
+      {
+        variable: "label",
+        label: "Thinking Label",
+        type: "text",
+        defaultValue: "Thinking…",
+      },
+      {
+        variable: "doneLabel",
+        label: "Done Label",
+        type: "text",
+        defaultValue: "Thought for 8s",
+      },
+      {
+        variable: "autoPlay",
+        label: "Auto Play",
+        type: "boolean",
+        defaultValue: "true",
+      },
+    ],
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
   "smooth-time-picker": {
     registryId: "smooth-time-picker",
     name: "Input / Time picker",

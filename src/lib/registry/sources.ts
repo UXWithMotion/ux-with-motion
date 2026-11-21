@@ -48,6 +48,8 @@ export const officialComponentFiles: Record<string, string> = {
   "pdf-action-card": "src/components/motion-components/cards/PdfActionCard.tsx",
   "smooth-input": "src/components/motion-components/inputs/SmoothInput.tsx",
   "ai-search-toggle": "src/components/motion-components/inputs/AiSearchToggle.tsx",
+  "ai-reasoning-drawer": "src/components/motion-components/AiReasoningDrawer.tsx",
+  "ai-reasoning": "src/components/motion-components/AiReasoningDrawer.tsx",
   "live-session-invite": "src/components/motion-components/LiveSessionInvite.tsx",
   "live-session": "src/components/motion-components/LiveSession.tsx",
   "view-more-eye-button": "src/components/motion-components/buttons/ViewMoreEyeButton.tsx",
