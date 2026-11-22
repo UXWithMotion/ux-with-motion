@@ -1,4 +1,5 @@
-export default function AdminDashboardPage() {
-  return <div>Admin Dashboard (Phase 2)</div>
-}
+import { redirect } from "next/navigation";
 
+export default function AdminDashboardPage() {
+  redirect("/admin/components");
+}

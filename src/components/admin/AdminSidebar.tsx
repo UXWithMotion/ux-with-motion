@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, LogOut, CreditCard } from "lucide-react";
+import { LayoutGrid, LogOut, CreditCard, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 
 export default function AdminSidebar() {
@@ -37,6 +37,11 @@ export default function AdminSidebar() {
       label: "Components",
       href: "/admin/components",
       icon: <LayoutGrid className="w-[24px] h-[24px]" />,
+    },
+    {
+      label: "Users",
+      href: "/admin/users",
+      icon: <Users className="w-[24px] h-[24px]" />,
     },
     {
       label: "Price edit",

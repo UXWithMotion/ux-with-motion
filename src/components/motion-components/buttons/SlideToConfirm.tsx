@@ -101,7 +101,7 @@ export function SlideToConfirm({
   const containerRef = useRef<HTMLDivElement>(null);
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Total travel distance: 280px container - 8px inset - 48px handle = 224px
+  // Total travel distance: 280px container - 8px inset (4px each side) - 48px handle = 224px
   const maxDrag = 224;
   const confirmThreshold = 180; // ~80% drag completion triggers confirmation
 
@@ -224,8 +224,7 @@ export function SlideToConfirm({
       tabIndex={disabled ? -1 : 0}
       onKeyDown={handleKeyDown}
       onClick={isConfirmed ? handleReset : undefined}
-      title={isConfirmed ? "Click to reset" : undefined}
-      className={`relative w-[280px] h-[56px] rounded-[12px] bg-white border border-[#DEE1E4] shadow-[0_1px_2px_rgba(0,0,0,0.04)] select-none overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#17181a]/20 ${
+      className={`relative w-[280px] h-[56px] rounded-[12px] bg-white ring-1 ring-[#DEE1E4] shadow-[0_1px_2px_rgba(0,0,0,0.04)] select-none overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#17181a]/20 ${
         isConfirmed ? "cursor-pointer" : ""
       } ${disabled ? "opacity-50 pointer-events-none" : ""} ${className}`}
     >
@@ -240,11 +239,12 @@ export function SlideToConfirm({
         </span>
       </motion.div>
 
-      {/* Expanding Black Fill Pill (bg-[#17181a], rounded-[8px], 48px height) */}
+      {/* Expanding Black Fill Pill: Exactly 4px padding on Top, Bottom, Left, and Right */}
       <motion.div
-        className="absolute left-[4px] top-[4px] h-[48px] rounded-[8px] bg-[#17181a] overflow-hidden flex items-center justify-center pointer-events-none"
+        className="absolute top-[4px] bottom-[4px] left-[4px] rounded-[8px] bg-[#17181a] overflow-hidden flex items-center justify-center pointer-events-none"
         style={{
           width: isConfirmed || isFilled ? 272 : backgroundWidth,
+          right: isConfirmed || isFilled ? 4 : undefined,
         }}
       >
         {/* Confirmed State (Variant 3): Gentle entrance from the right into exact center */}
@@ -275,7 +275,7 @@ export function SlideToConfirm({
         </AnimatePresence>
       </motion.div>
 
-      {/* Draggable Thumb / Handle with Arrow Icon (Variants 1 & 2) */}
+      {/* Draggable Thumb / Handle with Arrow Icon: Exactly 4px from Top, Bottom, Left */}
       {!isConfirmed && (
         <motion.div
           drag={stage === "idle" && !disabled ? "x" : false}
@@ -284,7 +284,7 @@ export function SlideToConfirm({
           dragMomentum={false}
           style={{ x }}
           onDragEnd={handleDragEnd}
-          className="absolute left-[4px] top-[4px] size-[48px] rounded-[8px] bg-[#17181a] flex items-center justify-center cursor-grab active:cursor-grabbing z-10 touch-none shadow-xs"
+          className="absolute left-[4px] top-[4px] bottom-[4px] w-[48px] rounded-[8px] bg-[#17181a] flex items-center justify-center cursor-grab active:cursor-grabbing z-10 touch-none shadow-xs"
         >
           <motion.div
             animate={{
