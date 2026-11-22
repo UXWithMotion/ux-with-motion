@@ -6,6 +6,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { componentRegistry } from "@/lib/registry/components";
 import { saveComponentDraft, discardComponentDraft } from "./drafts";
 import { ComponentDocs, ComponentSeo } from "@/lib/registry/types";
+import { sendComponentNotificationEmail } from "@/lib/email/notifications";
 import fs from "fs";
 import path from "path";
 
@@ -128,6 +129,18 @@ export async function createComponent(data: ComponentMutationPayload) {
     revalidatePath(`/components/${registryId}`);
     revalidatePath("/sitemap.xml");
     revalidateTag("public-components-catalog", { expire: 0 });
+
+    try {
+      await sendComponentNotificationEmail({
+        title: result.title,
+        description: result.description,
+        slug: registryId,
+        type: "launch",
+        category: result.category,
+      });
+    } catch (emailErr) {
+      console.error("[createComponent] Failed to send email notification:", emailErr);
+    }
   }
   revalidatePath("/admin/components");
 
@@ -255,6 +268,30 @@ export async function updateComponent(id: string, data: ComponentMutationPayload
   // Clean up any storage draft since the changes are now officially published/persisted
   if (result.status === "published") {
     await discardComponentDraft(id);
+
+    try {
+      if (existing.status !== "published") {
+        // Just published from draft/archived -> launch email notification
+        await sendComponentNotificationEmail({
+          title: result.title,
+          description: result.description,
+          slug: targetRegistryId,
+          type: "launch",
+          category: result.category,
+        });
+      } else {
+        // Was already published and modified -> update email notification
+        await sendComponentNotificationEmail({
+          title: result.title,
+          description: result.description,
+          slug: targetRegistryId,
+          type: "update",
+          category: result.category,
+        });
+      }
+    } catch (emailErr) {
+      console.error("[updateComponent] Failed to send email notification:", emailErr);
+    }
   }
 
   revalidatePath("/components");
