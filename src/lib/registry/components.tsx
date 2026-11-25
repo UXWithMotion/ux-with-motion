@@ -245,7 +245,43 @@ export const SlideToConfirm = dynamic(
   { loading: SkeletonLoader }
 );
 
+export const StepProgressPlayer = dynamic(
+  () => import("@/components/motion-components/buttons/StepProgressPlayer").then((m) => m.StepProgressPlayer),
+  { loading: SkeletonLoader }
+);
+
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "step-progress-player": {
+    registryId: "step-progress-player",
+    name: "Step Progress Player",
+    category: "Buttons",
+    component: StepProgressPlayer,
+    schema_definition: [
+      {
+        variable: "totalSteps",
+        label: "Total Steps",
+        type: "number",
+        defaultValue: "5",
+      },
+      {
+        variable: "stepDuration",
+        label: "Step Duration (sec)",
+        type: "number",
+        defaultValue: "3",
+      },
+      {
+        variable: "autoPlay",
+        label: "Auto Play",
+        type: "boolean",
+        defaultValue: "true",
+      },
+    ],
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
   "slide-to-confirm": {
     registryId: "slide-to-confirm",
     name: "Slide to Confirm",
