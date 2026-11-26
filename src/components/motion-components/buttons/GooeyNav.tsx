@@ -1,7 +1,13 @@
 "use client";
 
-import React, { useEffect, useId, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useMotionValueEvent,
+  useSpring,
+} from "framer-motion";
 
 export type GooeyNavItemId = "home" | "explore" | "about" | "contact";
 
@@ -26,6 +32,7 @@ const CENTER_Y = 44;
 const STEP_X = 80;
 const START_X = 41;
 const WHITE_CIRCLE_SIZE = 70;
+const DOCK_BG = "#E6E9EC";
 
 const LEAD_SPRING = {
   type: "spring" as const,
@@ -46,6 +53,105 @@ const ICON_SPRING = {
   stiffness: 320,
   damping: 22,
 };
+
+/**
+ * Builds a crisp, zero-blur vector bridge connecting two adjacent circular/rounded-square wells.
+ * At radiusScale === 1, uses exact C1 circle-tangent arcs (Rf = 25.06) for a true metaball neck.
+ */
+function buildStaticBridgePath(
+  x1: number,
+  x2: number,
+  cy: number,
+  radiusScale: number
+): string {
+  const waist = 13.5;
+
+  if (radiusScale >= 0.99) {
+    const contactX = 21.96;
+    const contactY = 21.17;
+    const filletR = 25.06;
+    const lx = x1 + contactX;
+    const rx = x2 - contactX;
+    const topY = cy - contactY;
+    const botY = cy + contactY;
+
+    return [
+      `M ${x1} ${topY}`,
+      `L ${lx} ${topY}`,
+      `A ${filletR} ${filletR} 0 0 0 ${rx} ${topY}`,
+      `L ${x2} ${topY}`,
+      `L ${x2} ${botY}`,
+      `L ${rx} ${botY}`,
+      `A ${filletR} ${filletR} 0 0 0 ${lx} ${botY}`,
+      `L ${x1} ${botY}`,
+      "Z",
+    ].join(" ");
+  }
+
+  if (radiusScale <= 0.02) {
+    return `M ${x1} ${cy - waist} L ${x2} ${cy - waist} L ${x2} ${cy + waist} L ${x1} ${cy + waist} Z`;
+  }
+
+  const flareY = waist + 7.67 * radiusScale;
+  const insetX = 21.96 * radiusScale;
+  const lx = x1 + insetX;
+  const rx = x2 - insetX;
+  const midX = (x1 + x2) / 2;
+  const cDx = (rx - lx) * 0.25;
+
+  return [
+    `M ${x1} ${cy - flareY}`,
+    `L ${lx} ${cy - flareY}`,
+    `C ${lx + cDx} ${cy - flareY}, ${midX - cDx} ${cy - waist}, ${midX} ${cy - waist}`,
+    `C ${midX + cDx} ${cy - waist}, ${rx - cDx} ${cy - flareY}, ${rx} ${cy - flareY}`,
+    `L ${x2} ${cy - flareY}`,
+    `L ${x2} ${cy + flareY}`,
+    `L ${rx} ${cy + flareY}`,
+    `C ${rx - cDx} ${cy + flareY}, ${midX + cDx} ${cy + waist}, ${midX} ${cy + waist}`,
+    `C ${midX - cDx} ${cy + waist}, ${lx + cDx} ${cy + flareY}, ${lx} ${cy + flareY}`,
+    `L ${x1} ${cy + flareY}`,
+    "Z",
+  ].join(" ");
+}
+
+/**
+ * Builds a crisp vector stretching bridge between the lead halo and trailing droplet
+ * while gliding between tabs, producing a fluid morph without SVG blur filters.
+ */
+function buildDynamicMorphPath(
+  cxA: number,
+  rA: number,
+  cxB: number,
+  rB: number,
+  cy: number,
+  radiusScale: number
+): string {
+  const leftX = cxA <= cxB ? cxA : cxB;
+  const leftR = cxA <= cxB ? rA : rB;
+  const rightX = cxA <= cxB ? cxB : cxA;
+  const rightR = cxA <= cxB ? rB : rA;
+
+  const dist = rightX - leftX;
+  if (dist < 4) return "";
+
+  const midX = (leftX + rightX) / 2;
+  const y1 = leftR * (0.45 + 0.35 * radiusScale);
+  const y2 = rightR * (0.45 + 0.35 * radiusScale);
+  const minR = Math.min(leftR, rightR);
+  const waist = Math.max(13, minR * Math.max(0.42, 0.88 - dist * 0.0055));
+  const c1 = dist * 0.28;
+  const cMid = dist * 0.2;
+
+  return [
+    `M ${leftX} ${cy - y1}`,
+    `C ${leftX + c1} ${cy - y1}, ${midX - cMid} ${cy - waist}, ${midX} ${cy - waist}`,
+    `C ${midX + cMid} ${cy - waist}, ${rightX - c1} ${cy - y2}, ${rightX} ${cy - y2}`,
+    `L ${rightX} ${cy + y2}`,
+    `C ${rightX - c1} ${cy + y2}, ${midX + cMid} ${cy + waist}, ${midX} ${cy + waist}`,
+    `C ${midX - cMid} ${cy + waist}, ${leftX + c1} ${cy + y1}, ${leftX} ${cy + y1}`,
+    "Z",
+  ].join(" ");
+}
 
 function HomeIcon({ isActive, isHovered }: { isActive: boolean; isHovered: boolean }) {
   return (
@@ -297,8 +403,23 @@ export function GooeyNav({
   const [isPointerInside, setIsPointerInside] = useState(false);
   const [radiusScale, setRadiusScale] = useState(1);
   const navRef = useRef<HTMLElement>(null);
-  const reactId = useId();
-  const filterId = `gooey-nav-filter-${reactId.replace(/:/g, "")}`;
+  const morphBridgeRef = useRef<SVGPathElement>(null);
+
+  const currentActive = activeId !== undefined ? activeId : internalActive;
+  const activeIndex = Math.max(
+    0,
+    NAV_ITEMS.findIndex((item) => item.id === currentActive)
+  );
+  const activeItem = NAV_ITEMS[activeIndex];
+  const activeCenterX = START_X + activeIndex * STEP_X;
+
+  const targetCenterX = useMotionValue(activeCenterX);
+  const haloX = useSpring(targetCenterX, LEAD_SPRING);
+  const trailX = useSpring(targetCenterX, TRAIL_SPRING);
+
+  useEffect(() => {
+    targetCenterX.set(activeCenterX);
+  }, [activeCenterX, targetCenterX]);
 
   useEffect(() => {
     const el = navRef.current;
@@ -329,19 +450,23 @@ export function GooeyNav({
     return () => observer.disconnect();
   }, []);
 
-  const currentActive = activeId !== undefined ? activeId : internalActive;
-  const activeIndex = Math.max(
-    0,
-    NAV_ITEMS.findIndex((item) => item.id === currentActive)
-  );
-  const activeItem = NAV_ITEMS[activeIndex];
-  const activeCenterX = START_X + activeIndex * STEP_X;
-  const wellRadius = Number((30.5 * radiusScale).toFixed(2));
-  const trailRadius = Number((34 * radiusScale).toFixed(2));
-  const haloRadius = Number((40.5 * radiusScale).toFixed(2));
-  const bridgeRadius = Number((9 * radiusScale).toFixed(2));
-  const blurStdDev = Number((7.5 * (0.12 + 0.88 * radiusScale)).toFixed(2));
-  const useGooeyFilter = radiusScale > 0.02;
+  const syncMorphBridge = (hx: number, tx: number, rScale: number) => {
+    const pathEl = morphBridgeRef.current;
+    if (!pathEl) return;
+    pathEl.setAttribute("d", buildDynamicMorphPath(hx, 40.5, tx, 34, CENTER_Y, rScale));
+  };
+
+  useMotionValueEvent(haloX, "change", (hx) => {
+    syncMorphBridge(hx, trailX.get(), radiusScale);
+  });
+
+  useMotionValueEvent(trailX, "change", (tx) => {
+    syncMorphBridge(haloX.get(), tx, radiusScale);
+  });
+
+  useEffect(() => {
+    syncMorphBridge(haloX.get(), trailX.get(), radiusScale);
+  }, [radiusScale, haloX, trailX]);
 
   useEffect(() => {
     if (!autoPlay || activeId !== undefined || isPointerInside) return;
@@ -357,6 +482,10 @@ export function GooeyNav({
 
     return () => window.clearInterval(timer);
   }, [autoPlay, intervalMs, activeId, isPointerInside, currentActive]);
+
+  const wellRadius = Number((30.5 * radiusScale).toFixed(2));
+  const trailRadius = Number((34 * radiusScale).toFixed(2));
+  const haloRadius = Number((40.5 * radiusScale).toFixed(2));
 
   const handleSelect = (id: GooeyNavItemId) => {
     if (activeId === undefined) {
@@ -387,133 +516,108 @@ export function GooeyNav({
       }}
       className={`relative inline-flex flex-col items-center select-none ${className}`}
     >
-      {/* Main Gooey Metaball Dock */}
+      {/* Main Crisp Vector Metaball Dock */}
       <div
         className="relative"
         style={{ width: `${SVG_WIDTH}px`, height: `${SVG_HEIGHT}px` }}
       >
-        {/* Organic Metaball Backing Layer */}
+        {/* Pure Vector Backing Layer (Zero SVG Blur Filter) */}
         <svg
           width={SVG_WIDTH}
           height={SVG_HEIGHT}
           viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
           fill="none"
+          shapeRendering="geometricPrecision"
           aria-hidden="true"
           className="absolute inset-0 overflow-visible pointer-events-none"
         >
-          <defs>
-            <filter
-              id={filterId}
-              x="-20%"
-              y="-35%"
-              width="140%"
-              height="170%"
-              colorInterpolationFilters="sRGB"
-            >
-              <feGaussianBlur in="SourceGraphic" stdDeviation={blurStdDev} result="blur" />
-              <feColorMatrix
-                in="blur"
-                mode="matrix"
-                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -8.5"
-                result="goo"
-              />
-            </filter>
-          </defs>
+          {/* Concave tangent metaball bridges connecting adjacent wells */}
+          {NAV_ITEMS.slice(0, -1).map((item, idx) => (
+            <path
+              key={`bridge-${item.id}`}
+              d={buildStaticBridgePath(
+                START_X + idx * STEP_X,
+                START_X + (idx + 1) * STEP_X,
+                CENTER_Y,
+                radiusScale
+              )}
+              fill={DOCK_BG}
+            />
+          ))}
 
-          <g style={{ filter: "drop-shadow(0 1px 4px rgba(0, 0, 0, 0.055))" }}>
-            <g filter={useGooeyFilter ? `url(#${filterId})` : undefined}>
-              {/* Continuous soft metaball bridge connecting the 4 circular wells */}
-              <rect
-                x={START_X}
-                y={CENTER_Y - 9}
-                width={STEP_X * (NAV_ITEMS.length - 1)}
-                height={18}
-                rx={bridgeRadius}
-                ry={bridgeRadius}
-                fill="#E6E9EC"
-              />
-
-              {/* Four base wells with subtle magnetic swell on hover */}
-              {NAV_ITEMS.map((item, idx) => {
-                const isItemHovered = hoveredId === item.id;
-                const cx = START_X + idx * STEP_X;
-                return (
-                  <g key={item.id} transform={`translate(${cx}, ${CENTER_Y})`}>
-                    <motion.rect
-                      x={-30.5}
-                      y={-30.5}
-                      width={61}
-                      height={61}
-                      rx={wellRadius}
-                      ry={wellRadius}
-                      fill="#E6E9EC"
-                      initial={false}
-                      animate={{
-                        scale: isItemHovered ? 1.07 : 1,
-                      }}
-                      transition={ICON_SPRING}
-                    />
-                  </g>
-                );
-              })}
-
-              {/* Trailing liquid tail creating the elastic morph bridge */}
-              <motion.g
-                initial={false}
-                animate={{ x: activeCenterX }}
-                transition={TRAIL_SPRING}
-              >
-                <rect
-                  x={-34}
-                  y={CENTER_Y - 34}
-                  width={68}
-                  height={68}
-                  rx={trailRadius}
-                  ry={trailRadius}
-                  fill="#E6E9EC"
+          {/* Four base wells with gentle swell on hover */}
+          {NAV_ITEMS.map((item, idx) => {
+            const isItemHovered = hoveredId === item.id;
+            const cx = START_X + idx * STEP_X;
+            return (
+              <g key={item.id} transform={`translate(${cx}, ${CENTER_Y})`}>
+                <motion.rect
+                  x={-30.5}
+                  y={-30.5}
+                  width={61}
+                  height={61}
+                  rx={wellRadius}
+                  ry={wellRadius}
+                  fill={DOCK_BG}
+                  initial={false}
+                  animate={{
+                    scale: isItemHovered ? 1.07 : 1,
+                  }}
+                  transition={ICON_SPRING}
                 />
-              </motion.g>
+              </g>
+            );
+          })}
 
-              {/* Active outer bulging metaball halo */}
-              <motion.g
-                initial={false}
-                animate={{ x: activeCenterX }}
-                transition={LEAD_SPRING}
-              >
-                <g transform={`translate(0, ${CENTER_Y})`}>
-                  <motion.rect
-                    x={-40.5}
-                    y={-40.5}
-                    width={81}
-                    height={81}
-                    rx={haloRadius}
-                    ry={haloRadius}
-                    fill="#E6E9EC"
-                    animate={{ scale: [1, 1.03, 1] }}
-                    transition={{
-                      duration: 3.2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                  />
-                </g>
-              </motion.g>
+          {/* Dynamic crisp liquid bridge connecting lead halo and trailing droplet */}
+          <path ref={morphBridgeRef} fill={DOCK_BG} />
+
+          {/* Trailing crisp liquid droplet */}
+          <motion.g style={{ x: trailX }}>
+            <rect
+              x={-34}
+              y={CENTER_Y - 34}
+              width={68}
+              height={68}
+              rx={trailRadius}
+              ry={trailRadius}
+              fill={DOCK_BG}
+            />
+          </motion.g>
+
+          {/* Active outer bulging halo */}
+          <motion.g style={{ x: haloX }}>
+            <g transform={`translate(0, ${CENTER_Y})`}>
+              <motion.rect
+                x={-40.5}
+                y={-40.5}
+                width={81}
+                height={81}
+                rx={haloRadius}
+                ry={haloRadius}
+                fill={DOCK_BG}
+                animate={{ scale: [1, 1.03, 1] }}
+                transition={{
+                  duration: 3.2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
             </g>
-          </g>
+          </motion.g>
         </svg>
 
         {/* Active Crisp White Inner Circle */}
         <motion.div
           aria-hidden="true"
-          initial={false}
-          animate={{ x: activeCenterX - WHITE_CIRCLE_SIZE / 2 }}
-          transition={LEAD_SPRING}
           style={{
+            x: haloX,
             width: `${WHITE_CIRCLE_SIZE}px`,
             height: `${WHITE_CIRCLE_SIZE}px`,
             top: `${(SVG_HEIGHT - WHITE_CIRCLE_SIZE) / 2}px`,
+            left: `${-WHITE_CIRCLE_SIZE / 2}px`,
           }}
-          className="absolute left-0 pointer-events-none"
+          className="absolute pointer-events-none"
         >
           <motion.div
             animate={{ scale: [1, 1.022, 1] }}
@@ -564,9 +668,7 @@ export function GooeyNav({
         style={{ width: `${SVG_WIDTH}px` }}
       >
         <motion.div
-          initial={false}
-          animate={{ x: activeCenterX }}
-          transition={LEAD_SPRING}
+          style={{ x: haloX }}
           className="absolute left-0 top-0"
         >
           <div className="-translate-x-1/2 flex items-center justify-center">
