@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Bookmark } from "lucide-react";
 import { ComponentModalPublic, ComponentItem, prefetchComponentSnippet, getComponentMotionDescription } from "@/components/ui/ComponentModalPublic";
 import { getPublishedComponents } from "@/lib/admin/components/queries";
-import { componentRegistry } from "@/lib/registry/components";
+import { getRegistryEntry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { useCustomization } from "@/components/providers/CustomizationProvider";
 import {
@@ -491,10 +491,11 @@ export function ComponentsExplorer({
               {(() => {
                 const overrides = getOverrides(comp.id);
                 const activeOverrides: Record<string, string> = {};
+                const registryEntry = getRegistryEntry(comp.registry_id);
                 const schemaDefToUse =
                   comp.schema_definition && comp.schema_definition.length > 0
                     ? comp.schema_definition
-                    : componentRegistry[comp.registry_id]?.schema_definition || [];
+                    : registryEntry?.schema_definition || [];
 
                 schemaDefToUse.forEach((config: { variable: string; defaultValue?: string }) => {
                   const val =
@@ -506,7 +507,7 @@ export function ComponentsExplorer({
                   }
                 });
 
-                const RegistryComponent = componentRegistry[comp.registry_id]?.component;
+                const RegistryComponent = registryEntry?.component;
                 if (RegistryComponent) {
                   return (
                     <RoundedEdgePreviewWrapper

@@ -1005,3 +1005,22 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     },
   },
 };
+
+const REGISTRY_ALIASES: Record<string, string> = {
+  "liquid-nav-menu": "sidebar",
+};
+
+/**
+ * Resolves a component registry entry by slug, normalizing whitespace/casing
+ * and mapping retired slugs to their canonical replacement.
+ */
+export function getRegistryEntry(
+  registryId?: string | null
+): ComponentRegistryEntry | undefined {
+  const normalized = registryId?.trim().toLowerCase();
+  if (!normalized) return undefined;
+  return (
+    componentRegistry[normalized] ??
+    componentRegistry[REGISTRY_ALIASES[normalized] ?? ""]
+  );
+}

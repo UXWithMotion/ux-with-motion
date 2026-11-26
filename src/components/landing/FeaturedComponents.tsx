@@ -6,7 +6,7 @@ import { Bookmark } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { ExploreButton } from "@/components/ui/ExploreButton";
 import { ComponentModalPublic, ComponentItem, prefetchComponentSnippet, getComponentMotionDescription } from "@/components/ui/ComponentModalPublic";
-import { componentRegistry } from "@/lib/registry/components";
+import { getRegistryEntry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { useCustomization } from "@/components/providers/CustomizationProvider";
 import {
@@ -112,10 +112,11 @@ export function FeaturedComponents({
 
     const overrides = getOverrides(comp.id);
     const activeOverrides: Record<string, string> = {};
+    const registryEntry = getRegistryEntry(comp.registry_id);
     const schemaDefToUse =
       comp.schema_definition && comp.schema_definition.length > 0
         ? comp.schema_definition
-        : componentRegistry[comp.registry_id]?.schema_definition || [];
+        : registryEntry?.schema_definition || [];
 
     schemaDefToUse.forEach((config: { variable: string; defaultValue?: string }) => {
       const val =
@@ -127,7 +128,7 @@ export function FeaturedComponents({
       }
     });
 
-    const RegistryComponent = componentRegistry[comp.registry_id]?.component;
+    const RegistryComponent = registryEntry?.component;
     const hasHtmlCss = comp.snippets?.html || comp.snippets?.css;
 
     return (

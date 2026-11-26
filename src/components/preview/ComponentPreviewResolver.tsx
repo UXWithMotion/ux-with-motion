@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Component, ErrorInfo, ReactNode } from "react";
-import { componentRegistry } from "@/lib/registry/components";
+import { getRegistryEntry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { AlertCircle, Info } from "lucide-react";
 
@@ -70,9 +70,7 @@ export function ComponentPreviewResolver({
   containerBg = "bg-[#FBFCFD]",
 }: ComponentPreviewResolverProps) {
   const normalizedRegistryId = registryId?.trim().toLowerCase();
-  const registryEntry = normalizedRegistryId
-    ? componentRegistry[normalizedRegistryId]
-    : undefined;
+  const registryEntry = getRegistryEntry(registryId);
   const ComponentToRender = registryEntry?.component;
   const snippetReact = snippets?.react;
 

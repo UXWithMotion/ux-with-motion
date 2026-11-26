@@ -6,7 +6,7 @@ import { Camera, Trash2, Check, Bookmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { useRouter } from "next/navigation";
 import { ComponentModalPublic, ComponentItem, prefetchComponentSnippet } from "@/components/ui/ComponentModalPublic";
-import { componentRegistry } from "@/lib/registry/components";
+import { componentRegistry, getRegistryEntry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { useCustomization } from "@/components/providers/CustomizationProvider";
 import { getPublishedComponents } from "@/lib/admin/components/queries";
@@ -449,10 +449,11 @@ export function ProfileClient({
                     {savedComponents.map((comp) => {
                       const overrides = getOverrides(comp.id);
                       const activeOverrides: Record<string, string> = {};
+                      const registryEntry = getRegistryEntry(comp.registry_id);
                       const schemaDefToUse =
                         comp.schema_definition && comp.schema_definition.length > 0
                           ? comp.schema_definition
-                          : componentRegistry[comp.registry_id]?.schema_definition || [];
+                          : registryEntry?.schema_definition || [];
 
                       schemaDefToUse.forEach((config: any) => {
                         const val = overrides[config.variable] !== undefined ? overrides[config.variable] : config.defaultValue;
@@ -461,7 +462,7 @@ export function ProfileClient({
                         }
                       });
 
-                      const RegistryComponent = componentRegistry[comp.registry_id]?.component;
+                      const RegistryComponent = registryEntry?.component;
 
                       return (
                         <div

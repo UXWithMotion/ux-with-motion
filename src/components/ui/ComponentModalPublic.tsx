@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useLayoutEffect, useRef } from "re
 import { useRouter } from "next/navigation";
 import { X, Check, Copy, Lock, Bookmark, Play, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { componentRegistry } from "@/lib/registry/components";
+import { getRegistryEntry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { useCustomization } from "@/components/providers/CustomizationProvider";
 import { CopyToFigmaButton } from "@/components/ui/CopyToFigmaButton";
@@ -160,7 +160,7 @@ export function ComponentModalPublic({
   };
 
   const isSaved = savedIds.includes(component.id);
-  const registryEntry = componentRegistry[component.registry_id];
+  const registryEntry = getRegistryEntry(component.registry_id);
   const roundedEdge = getRoundedEdgePercent(overrides);
 
   const schemaDefToUse = useMemo(() => {
@@ -809,7 +809,7 @@ export function ComponentModalPublic({
                     </h3>
                     <div className="flex flex-col gap-4">
                       {otherComponentsList.map((other) => {
-                        const OtherRegistry = componentRegistry[other.registry_id]?.component;
+                        const OtherRegistry = getRegistryEntry(other.registry_id)?.component;
                         const isOtherSaved = savedIds.includes(other.id);
 
                         return (
