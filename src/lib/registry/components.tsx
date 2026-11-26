@@ -40,6 +40,11 @@ export const SmoothTimePicker = dynamic(
   { loading: SkeletonLoader }
 );
 
+export const RangeTabSlider = dynamic(
+  () => import("@/components/motion-components/inputs/RangeTabSlider").then((m) => m.RangeTabSlider),
+  { loading: SkeletonLoader }
+);
+
 export const SmoothCardInput = dynamic(
   () => import("@/components/motion-components/inputs/SmoothCardInput").then((m) => m.SmoothCardInput),
   { loading: SkeletonLoader }
@@ -266,6 +271,18 @@ export const GooeyNav = dynamic(
 );
 
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "range-tab-slider": {
+    registryId: "range-tab-slider",
+    name: "Range Tab Slider",
+    category: "Inputs",
+    component: RangeTabSlider,
+    schema_definition: [],
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
   "gooey-nav": {
     registryId: "gooey-nav",
     name: "Gooey Nav",

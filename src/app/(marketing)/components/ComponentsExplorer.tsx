@@ -78,6 +78,7 @@ export const CATEGORY_TABS: { id: ComponentCategoryTab; label: string }[] = [
 ];
 
 const INPUT_SLUGS = new Set([
+  "range-tab-slider",
   "smooth-card-input",
   "ai-search-toggle",
   "ai-reasoning-drawer",

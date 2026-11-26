@@ -45,6 +45,7 @@ export const officialComponentFiles: Record<string, string> = {
   "product-type-dropdown": "src/components/motion-components/inputs/ProductTypeDropdown.tsx",
   "smooth-phone-input": "src/components/motion-components/inputs/SmoothPhoneInput.tsx",
   "smooth-email-input": "src/components/motion-components/inputs/SmoothEmailInput.tsx",
+  "range-tab-slider": "src/components/motion-components/inputs/RangeTabSlider.tsx",
   "pdf-action-card": "src/components/motion-components/cards/PdfActionCard.tsx",
   "card-swap": "src/components/motion-components/cards/CardSwap.tsx",
   "smooth-input": "src/components/motion-components/inputs/SmoothInput.tsx",
