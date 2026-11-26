@@ -325,26 +325,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     name: "Step Progress Player",
     category: "Buttons",
     component: StepProgressPlayer,
-    schema_definition: [
-      {
-        variable: "totalSteps",
-        label: "Total Steps",
-        type: "number",
-        defaultValue: "5",
-      },
-      {
-        variable: "stepDuration",
-        label: "Step Duration (sec)",
-        type: "number",
-        defaultValue: "3",
-      },
-      {
-        variable: "autoPlay",
-        label: "Auto Play",
-        type: "boolean",
-        defaultValue: "true",
-      },
-    ],
+    schema_definition: [],
     snippets: {
       html: "",
       css: "",
@@ -530,16 +511,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     name: "Input / Card number",
     category: "Inputs",
     component: SmoothCardInput,
-    schema_definition: [
-      {
-        id: "property1",
-        variable: "property1",
-        label: "State",
-        type: "select",
-        options: ["Default", "identify"],
-        defaultValue: "Default"
-      }
-    ],
+    schema_definition: [],
     snippets: {
       html: "",
       css: "",
@@ -552,16 +524,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     name: "Input / Copy input",
     category: "Inputs",
     component: SmoothCopyInput,
-    schema_definition: [
-      {
-        id: "property1",
-        variable: "property1",
-        label: "State",
-        type: "select",
-        options: ["copy", "copied"],
-        defaultValue: "copy"
-      }
-    ],
+    schema_definition: [],
     snippets: {
       html: "",
       css: "",
@@ -574,16 +537,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     name: "Input / Tag input",
     category: "Inputs",
     component: SmoothTagInput,
-    schema_definition: [
-      {
-        id: "property1",
-        variable: "property1",
-        label: "State",
-        type: "select",
-        options: ["Default", "tag collapse", "tag expand"],
-        defaultValue: "Default"
-      }
-    ],
+    schema_definition: [],
     snippets: {
       html: "",
       css: "",
@@ -596,16 +550,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     name: "Input / Date picker",
     category: "Inputs",
     component: SmoothDatePicker,
-    schema_definition: [
-      {
-        id: "property1",
-        variable: "property1",
-        label: "State",
-        type: "select",
-        options: ["Default", "Open", "Choose month", "Choose year"],
-        defaultValue: "Default"
-      }
-    ],
+    schema_definition: [],
     snippets: {
       html: "",
       css: "",
@@ -618,16 +563,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     name: "Smooth OTP Input",
     category: "Inputs",
     component: SmoothOtpInput,
-    schema_definition: [
-      {
-        id: "property1",
-        variable: "property1",
-        label: "State",
-        type: "select",
-        options: ["Field anatomy", "Active", "Filled"],
-        defaultValue: "Field anatomy"
-      }
-    ],
+    schema_definition: [],
     snippets: {
       html: "",
       css: "",
@@ -640,16 +576,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     name: "Smooth Password Input",
     category: "Inputs",
     component: SmoothPasswordInput,
-    schema_definition: [
-      {
-        id: "property1",
-        variable: "property1",
-        label: "State",
-        type: "select",
-        options: ["Field anatomy", "Input container"],
-        defaultValue: "Field anatomy"
-      }
-    ],
+    schema_definition: [],
     snippets: {
       html: "",
       css: "",
@@ -662,16 +589,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     name: "Product Type Dropdown",
     category: "Inputs",
     component: ProductTypeDropdown,
-    schema_definition: [
-      {
-        id: "property1",
-        variable: "property1",
-        label: "State",
-        type: "select",
-        options: ["Default", "Input", "Selected"],
-        defaultValue: "Default"
-      }
-    ],
+    schema_definition: [],
     snippets: {
       html: "",
       css: "",
@@ -684,16 +602,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     name: "Smooth Phone Number Input",
     category: "Inputs",
     component: SmoothPhoneInput,
-    schema_definition: [
-      {
-        id: "property1",
-        variable: "property1",
-        label: "State",
-        type: "select",
-        options: ["Frame 9", "Frame 10", "Variant3"],
-        defaultValue: "Frame 9"
-      }
-    ],
+    schema_definition: [],
     snippets: {
       html: "",
       css: "",
@@ -706,16 +615,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     name: "Smooth Email Input",
     category: "Inputs",
     component: SmoothEmailInput,
-    schema_definition: [
-      {
-        id: "property1",
-        variable: "property1",
-        label: "State",
-        type: "select",
-        options: ["Field anatomy", "Input container"],
-        defaultValue: "Field anatomy"
-      }
-    ],
+    schema_definition: [],
     snippets: {
       html: "",
       css: "",
@@ -728,15 +628,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     name: "PDF Action Card",
     category: "Cards",
     component: PdfActionCard,
-    schema_definition: [
-      {
-        variable: "property1",
-        label: "State",
-        type: "select",
-        options: ["Frame 1", "Frame 2", "Frame 3", "Frame 4"],
-        defaultValue: "Frame 1"
-      }
-    ],
+    schema_definition: [],
     snippets: {
       html: "",
       css: "",

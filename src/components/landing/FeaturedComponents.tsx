@@ -9,6 +9,10 @@ import { ComponentModalPublic, ComponentItem, prefetchComponentSnippet, getCompo
 import { componentRegistry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { useCustomization } from "@/components/providers/CustomizationProvider";
+import {
+  RoundedEdgePreviewWrapper,
+  getRoundedEdgePercent,
+} from "@/components/customization/RoundedEdgePreviewWrapper";
 
 export interface FeaturedComponentsProps {
   initialComponents: ComponentItem[];
@@ -167,13 +171,14 @@ export function FeaturedComponents({
           className="relative w-full flex-1 flex items-center justify-center bg-transparent pointer-events-auto z-0 min-h-[151px] py-3 px-2 overflow-hidden cursor-default"
         >
           <div className="w-full transform flex items-center justify-center scale-[0.9]">
-            {RegistryComponent ? (
-              <div
-                style={activeOverrides as React.CSSProperties}
+                {RegistryComponent ? (
+              <RoundedEdgePreviewWrapper
+                roundedEdge={getRoundedEdgePercent(overrides)}
+                styleOverrides={activeOverrides as React.CSSProperties}
                 className="w-full flex items-center justify-center"
               >
                 <RegistryComponent />
-              </div>
+              </RoundedEdgePreviewWrapper>
             ) : hasHtmlCss && comp.source_type !== "react" ? (
               <div className="w-[150%] h-[150%]">
                 <LivePreviewIframe

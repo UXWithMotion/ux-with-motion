@@ -2,12 +2,18 @@
 
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { X, Check, Copy, Lock, Bookmark, Play } from "lucide-react";
+import { X, Check, Copy, Lock, Bookmark, Play, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { componentRegistry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { useCustomization } from "@/components/providers/CustomizationProvider";
 import { CopyToFigmaButton } from "@/components/ui/CopyToFigmaButton";
+import {
+  RoundedEdgePreviewWrapper,
+  ROUNDED_EDGE_KEY,
+  ROUNDED_EDGE_DEFAULT,
+  getRoundedEdgePercent,
+} from "@/components/customization/RoundedEdgePreviewWrapper";
 
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
@@ -42,6 +48,15 @@ export type ComponentItem = {
   schema_definition?: any[];
   access_tier?: "free" | "premium";
   is_locked?: boolean;
+};
+
+type SchemaControlItem = {
+  id?: string;
+  variable: string;
+  label?: string;
+  type?: string;
+  defaultValue?: string;
+  options?: string[];
 };
 
 // Generates a crawlable, high-intent 1-line UX/motion description for cards and metadata
@@ -88,6 +103,13 @@ export function ComponentModalPublic({
   const { getOverrides, setOverrides: updateGlobalOverrides, saveOverrides } = useCustomization();
 
   const [isMobile, setIsMobile] = useState(false);
+  const [activeTab, setActiveTab] = useState<"customization" | "code">(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("tab") === "code") return "code";
+    }
+    return "customization";
+  });
   const [copied, setCopied] = useState<string | false>(false);
   const [prevComponentId, setPrevComponentId] = useState(component.id);
   const [overrides, setOverrides] = useState<Record<string, string>>(() => getOverrides(component.id));
@@ -121,8 +143,25 @@ export function ComponentModalPublic({
     onClose();
   };
 
+  const handleOverrideChange = (key: string, value: string) => {
+    const next = { ...overrides };
+    if (key === ROUNDED_EDGE_KEY && Number(value) >= ROUNDED_EDGE_DEFAULT) {
+      delete next[key];
+    } else {
+      next[key] = value;
+    }
+    setOverrides(next);
+    updateGlobalOverrides(component.id, next);
+  };
+
+  const handleResetOverrides = () => {
+    setOverrides({});
+    updateGlobalOverrides(component.id, {});
+  };
+
   const isSaved = savedIds.includes(component.id);
   const registryEntry = componentRegistry[component.registry_id];
+  const roundedEdge = getRoundedEdgePercent(overrides);
 
   const schemaDefToUse = useMemo(() => {
     return component.schema_definition && component.schema_definition.length > 0
@@ -130,20 +169,37 @@ export function ComponentModalPublic({
       : registryEntry?.schema_definition || [];
   }, [component.schema_definition, registryEntry]);
 
-  // Extract just the CSS variable overrides
-  const activeOverrides = useMemo(() => {
-    const active: Record<string, string> = {};
+  // Extract CSS variable overrides and typed component prop overrides
+  const { activeOverrides, componentPropOverrides } = useMemo(() => {
+    const cssActive: Record<string, string> = {};
+    const propsActive: Record<string, unknown> = {};
+
     schemaDefToUse.forEach((config: any) => {
-      const val =
-        overrides[config.variable] !== undefined
-          ? overrides[config.variable]
-          : config.defaultValue;
-      if (config.variable) {
-        active[config.variable] = val;
+      const key = config.variable;
+      if (!key || key === ROUNDED_EDGE_KEY) return;
+
+      const rawVal = overrides[key] !== undefined ? overrides[key] : config.defaultValue;
+      if (key.startsWith("--")) {
+        if (rawVal !== undefined) cssActive[key] = rawVal;
+      } else if (overrides[key] !== undefined) {
+        const typeLower = String(config.type || "").toLowerCase();
+        if (typeLower === "boolean") {
+          propsActive[key] = overrides[key] === "true";
+        } else if (typeLower === "number" || typeLower === "slider") {
+          const parsed = Number(String(overrides[key]).replace(/[^0-9.-]/g, ""));
+          if (Number.isFinite(parsed)) propsActive[key] = parsed;
+        } else {
+          propsActive[key] = overrides[key];
+        }
       }
     });
-    return active;
+
+    return { activeOverrides: cssActive, componentPropOverrides: propsActive };
   }, [schemaDefToUse, overrides]);
+
+  const hasCustomizations =
+    roundedEdge !== ROUNDED_EDGE_DEFAULT ||
+    Object.keys(overrides).some((k) => k !== ROUNDED_EDGE_KEY && overrides[k] !== undefined);
 
   const overrideStyleBlock = useMemo(() => {
     if (Object.keys(activeOverrides).length === 0) return "";
@@ -291,6 +347,239 @@ export function ComponentModalPublic({
     return () => clearTimeout(idleTimer);
   }, [isOpen, isLocked, otherComponentsList]);
 
+  const customControls = useMemo(() => {
+    return (schemaDefToUse as SchemaControlItem[]).filter(
+      (c) =>
+        c?.variable &&
+        c.variable !== ROUNDED_EDGE_KEY &&
+        c.variable !== "corner" &&
+        c.variable !== "property1" &&
+        c.variable !== "--font-sans" &&
+        c.variable !== "totalSteps" &&
+        c.label !== "State" &&
+        c.label !== "Font sans" &&
+        c.label !== "Total Steps"
+    );
+  }, [schemaDefToUse]);
+
+  const renderPreviewContent = (compact = false) => {
+    const RegistryComponent = registryEntry?.component;
+    if (RegistryComponent) {
+      return (
+        <RoundedEdgePreviewWrapper
+          roundedEdge={roundedEdge}
+          styleOverrides={activeOverrides as React.CSSProperties}
+          className="w-full h-full flex items-center justify-center"
+        >
+          <RegistryComponent {...componentPropOverrides} />
+        </RoundedEdgePreviewWrapper>
+      );
+    }
+
+    const hasHtmlCss = snippets?.html || snippets?.css;
+    if (hasHtmlCss && component.source_type !== "react") {
+      return (
+        <div className="w-full h-full flex items-center justify-center">
+          <LivePreviewIframe
+            sourceType={
+              (component.source_type as "react" | "html_css" | "both") || "html_css"
+            }
+            snippets={snippets}
+            schemaDefinition={component.schema_definition}
+            overrides={activeOverrides}
+            className="w-[120%] h-[120%] border-none scale-[0.85] origin-center"
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="text-[#7D7F82] font-medium text-sm flex flex-col items-center gap-1.5 text-center px-4">
+        <span>Preview Unavailable</span>
+        <span className="text-xs text-[#A0A2A5]">
+          {compact
+            ? "Missing trusted registry renderer"
+            : "This component requires a trusted registry renderer."}
+        </span>
+      </div>
+    );
+  };
+
+  const renderTabBar = () => (
+    <div className="flex gap-[8px] items-center shrink-0">
+      <button
+        type="button"
+        onClick={() => setActiveTab("customization")}
+        className={`px-[22px] sm:px-[24px] py-[10px] sm:py-[12px] rounded-[40px] transition-colors font-sans font-medium text-[14px] md:text-[15px] cursor-pointer ${
+          activeTab === "customization"
+            ? "bg-[#1F2123] text-white"
+            : "bg-[#EEF1F4] text-[#7D7F82] hover:text-black hover:bg-[#DEE1E4]"
+        }`}
+      >
+        Customization
+      </button>
+      <button
+        type="button"
+        onClick={() => setActiveTab("code")}
+        className={`px-[28px] sm:px-[36px] py-[10px] sm:py-[12px] rounded-[40px] transition-colors font-sans font-medium text-[14px] md:text-[15px] cursor-pointer ${
+          activeTab === "code"
+            ? "bg-[#1F2123] text-white"
+            : "bg-[#EEF1F4] text-[#7D7F82] hover:text-black hover:bg-[#DEE1E4]"
+        }`}
+      >
+        Code
+      </button>
+    </div>
+  );
+
+  const renderCustomizationPanel = () => (
+    <div className="flex flex-col gap-[20px] w-full max-w-[593px]">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="font-sans font-bold text-[18px] text-[#454545]">
+          Customization
+        </h3>
+        {hasCustomizations && (
+          <button
+            type="button"
+            onClick={handleResetOverrides}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#DEE1E4] bg-white hover:bg-[#F7F9FB] text-[12px] font-sans font-medium text-[#454545] transition-colors cursor-pointer"
+          >
+            <RotateCcw size={13} />
+            Reset
+          </button>
+        )}
+      </div>
+
+      {/* Appearance Group */}
+      <div className="flex flex-col gap-[12px] w-full">
+        <h4 className="font-sans font-semibold text-[13px] uppercase tracking-wider text-[#7D7F82]">
+          Appearance
+        </h4>
+
+        {/* Universal Rounded Edge Customization (0% - 100%) */}
+        <div className="flex flex-col gap-[8px] w-full">
+          <div className="flex items-center justify-between">
+            <label
+              htmlFor={`rounded-edge-slider-${component.id}`}
+              className="font-sans font-medium text-[13px] text-[#454545]"
+            >
+              Rounded edge
+            </label>
+            <span className="font-sans text-[12px] text-[#7D7F82]">
+              {roundedEdge === 100 ? "Original (100%)" : `${roundedEdge}%`}
+            </span>
+          </div>
+          <div className="bg-[#F7F9FB] border border-[#D7DADC] rounded-[58px] px-[18px] py-[13px] w-full flex items-center gap-4 focus-within:border-[#1F2123] transition-colors">
+            <input
+              id={`rounded-edge-slider-${component.id}`}
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={roundedEdge}
+              onChange={(e) => handleOverrideChange(ROUNDED_EDGE_KEY, e.target.value)}
+              className="flex-1 accent-[#1F2123] cursor-pointer"
+            />
+            <span className="font-sans font-medium text-[14px] text-[#1F2123] w-[42px] text-right tabular-nums shrink-0">
+              {roundedEdge}%
+            </span>
+          </div>
+        </div>
+
+        {/* Component-Specific Schema Controls */}
+        {customControls.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-[14px] w-full pt-2">
+            {customControls.map((config) => {
+              const key = config.variable;
+              const rawVal =
+                overrides[key] !== undefined ? overrides[key] : (config.defaultValue ?? "");
+              const typeLower = String(config.type || "").toLowerCase();
+
+              return (
+                <div key={config.id || key} className="flex flex-col gap-[8px]">
+                  <span className="font-sans font-medium text-[13px] text-[#454545]">
+                    {config.label || key}
+                  </span>
+
+                  {typeLower === "color picker" || typeLower === "color" ? (
+                    <div className="bg-[#F7F9FB] border border-[#D7DADC] rounded-[58px] px-[16px] py-[10px] w-full flex items-center gap-3 focus-within:border-[#1F2123] transition-colors">
+                      <div className="relative flex items-center shrink-0">
+                        <input
+                          type="color"
+                          value={String(rawVal).startsWith("#") ? String(rawVal) : "#1F2123"}
+                          onChange={(e) => handleOverrideChange(key, e.target.value)}
+                          className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
+                        />
+                        <div
+                          className="w-[20px] h-[20px] rounded-full border border-[#D7DADC] pointer-events-none"
+                          style={{
+                            backgroundColor: String(rawVal).startsWith("#")
+                              ? String(rawVal)
+                              : "#1F2123",
+                          }}
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={String(rawVal)}
+                        onChange={(e) => handleOverrideChange(key, e.target.value)}
+                        className="font-sans text-[14px] text-[#1F2123] outline-none flex-1 min-w-0 bg-transparent"
+                      />
+                    </div>
+                  ) : typeLower === "boolean" ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleOverrideChange(key, String(rawVal) === "true" ? "false" : "true")
+                      }
+                      className="bg-[#F7F9FB] border border-[#D7DADC] rounded-[58px] px-[16px] py-[11px] w-full flex items-center justify-between cursor-pointer hover:border-[#1F2123]/40 transition-colors"
+                    >
+                      <span className="font-sans text-[14px] text-[#1F2123]">
+                        {String(rawVal) === "true" ? "Enabled" : "Disabled"}
+                      </span>
+                      <span
+                        className={`w-9 h-5 rounded-full transition-colors flex items-center p-0.5 ${
+                          String(rawVal) === "true" ? "bg-[#1F2123]" : "bg-[#CBCED1]"
+                        }`}
+                      >
+                        <span
+                          className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                            String(rawVal) === "true" ? "translate-x-4" : "translate-x-0"
+                          }`}
+                        />
+                      </span>
+                    </button>
+                  ) : typeLower === "select" && Array.isArray(config.options) ? (
+                    <select
+                      value={String(rawVal)}
+                      onChange={(e) => handleOverrideChange(key, e.target.value)}
+                      className="bg-[#F7F9FB] border border-[#D7DADC] rounded-[58px] px-[16px] py-[12px] w-full font-sans text-[14px] text-[#1F2123] outline-none focus:border-[#1F2123] transition-colors cursor-pointer"
+                    >
+                      {config.options.map((opt: string) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="bg-[#F7F9FB] border border-[#D7DADC] rounded-[58px] px-[16px] py-[11px] w-full flex items-center focus-within:border-[#1F2123] transition-colors">
+                      <input
+                        type={typeLower === "number" ? "number" : "text"}
+                        value={String(rawVal)}
+                        onChange={(e) => handleOverrideChange(key, e.target.value)}
+                        className="font-sans text-[14px] text-[#1F2123] outline-none flex-1 min-w-0 bg-transparent"
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -385,50 +674,21 @@ export function ComponentModalPublic({
 
                   {/* Live Interactive Node */}
                   <div className="w-full h-full transform flex items-center justify-center scale-100 sm:scale-105 pointer-events-auto">
-                    {(() => {
-                      const RegistryComponent = registryEntry?.component;
-                      if (RegistryComponent) {
-                        return (
-                          <div
-                            style={activeOverrides as React.CSSProperties}
-                            className="w-full h-full flex items-center justify-center"
-                          >
-                            <RegistryComponent />
-                          </div>
-                        );
-                      }
-                      if (snippets?.html || snippets?.css) {
-                        return (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <LivePreviewIframe
-                              sourceType={
-                                (component.source_type as "react" | "html_css" | "both") || "html_css"
-                              }
-                              snippets={snippets}
-                              schemaDefinition={component.schema_definition}
-                              overrides={activeOverrides}
-                              className="w-[120%] h-[120%] border-none scale-[0.85] origin-center"
-                            />
-                          </div>
-                        );
-                      }
-                      return (
-                        <div className="text-[#7D7F82] font-medium text-sm flex flex-col items-center gap-1.5 text-center px-4">
-                          <span>Preview Unavailable</span>
-                          <span className="text-xs text-[#A0A2A5]">
-                            Missing trusted registry renderer
-                          </span>
-                        </div>
-                      );
-                    })()}
+                    {renderPreviewContent(true)}
                   </div>
                 </div>
 
-                {/* Code Section [2312:9392] */}
-                <div className="mt-5 mb-2">
-                  <h3 className="font-sans font-bold text-[18px] text-[#1F2123] mb-3">
-                    Code
-                  </h3>
+                {/* Tabs & Active Content */}
+                <div className="mt-5 mb-2 flex flex-col gap-4">
+                  {renderTabBar()}
+
+                  {activeTab === "customization" ? (
+                    renderCustomizationPanel()
+                  ) : (
+                    <div>
+                      <h3 className="font-sans font-bold text-[18px] text-[#1F2123] mb-3">
+                        Code
+                      </h3>
 
                   {isLocked ? (
                     <div className="flex flex-col items-center justify-center w-full text-center gap-3 py-6 px-4 bg-[#F7F9FB] rounded-[24px] border border-[#DEE1E4]">
@@ -536,6 +796,8 @@ export function ComponentModalPublic({
                       />
                     </div>
                   )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Component Grid [2312:9413]: Other Components */}
@@ -603,7 +865,12 @@ export function ComponentModalPublic({
                             <div className="h-[151px] w-full flex items-center justify-center p-2 relative overflow-hidden pointer-events-none">
                               <div className="transform scale-[0.85] flex items-center justify-center w-full">
                                 {OtherRegistry ? (
-                                  <OtherRegistry />
+                                  <RoundedEdgePreviewWrapper
+                                    roundedEdge={getRoundedEdgePercent(getOverrides(other.id))}
+                                    className="w-full flex items-center justify-center"
+                                  >
+                                    <OtherRegistry />
+                                  </RoundedEdgePreviewWrapper>
                                 ) : other.snippets?.html || other.snippets?.css ? (
                                   <div className="w-[140%] h-[140%]">
                                     <LivePreviewIframe
@@ -660,45 +927,7 @@ export function ComponentModalPublic({
                 {/* Left Side: Preview Area */}
                 <div className="bg-[#FBFCFD] border border-[#DEE1E4] rounded-[28px] w-full md:w-[572px] h-full shrink-0 relative flex items-center justify-center overflow-hidden">
                   <div className="w-full h-full transform flex items-center justify-center scale-110">
-                    {(() => {
-                      const RegistryComponent = registryEntry?.component;
-                      if (RegistryComponent) {
-                        return (
-                          <div
-                            style={activeOverrides as React.CSSProperties}
-                            className="w-full h-full flex items-center justify-center"
-                          >
-                            <RegistryComponent />
-                          </div>
-                        );
-                      }
-
-                      const hasHtmlCss = snippets?.html || snippets?.css;
-                      if (hasHtmlCss && component.source_type !== "react") {
-                        return (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <LivePreviewIframe
-                              sourceType={
-                                (component.source_type as "react" | "html_css" | "both") || "html_css"
-                              }
-                              snippets={snippets}
-                              schemaDefinition={component.schema_definition}
-                              overrides={activeOverrides}
-                              className="w-[120%] h-[120%] border-none scale-[0.85] origin-center"
-                            />
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="text-[#7D7F82] font-medium text-sm flex flex-col items-center gap-2">
-                          <span>Preview Unavailable</span>
-                          <span className="text-xs">
-                            This component requires a trusted registry renderer.
-                          </span>
-                        </div>
-                      );
-                    })()}
+                    {renderPreviewContent(false)}
                   </div>
                 </div>
 
@@ -727,9 +956,14 @@ export function ComponentModalPublic({
                     )}
                   </div>
 
+                  {/* Tabs */}
+                  {renderTabBar()}
+
                   {/* Tab Content */}
                   <div className="flex-1 overflow-y-auto w-full pr-2">
-                    {isLocked ? (
+                    {activeTab === "customization" ? (
+                      renderCustomizationPanel()
+                    ) : isLocked ? (
                       <div className="flex flex-col items-center justify-center h-full w-full max-w-[593px] text-center gap-4 py-12 px-4">
                         <div className="size-16 rounded-full bg-[#EEF1F4] border border-[#DEE1E4] flex items-center justify-center mb-1">
                           <Lock className="text-[#454545] size-7" />

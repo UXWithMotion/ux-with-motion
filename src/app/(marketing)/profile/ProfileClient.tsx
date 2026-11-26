@@ -10,6 +10,10 @@ import { componentRegistry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { useCustomization } from "@/components/providers/CustomizationProvider";
 import { getPublishedComponents } from "@/lib/admin/components/queries";
+import {
+  RoundedEdgePreviewWrapper,
+  getRoundedEdgePercent,
+} from "@/components/customization/RoundedEdgePreviewWrapper";
 
 export function ProfileClient({ 
   user, 
@@ -499,13 +503,13 @@ export function ProfileClient({
                           >
                             <div className="w-full h-full transform flex items-center justify-center scale-[0.9]">
                               {RegistryComponent ? (
-                                <div
-                                  onClick={(e) => e.stopPropagation()}
-                                  style={activeOverrides as React.CSSProperties}
+                                <RoundedEdgePreviewWrapper
+                                  roundedEdge={getRoundedEdgePercent(overrides)}
+                                  styleOverrides={activeOverrides as React.CSSProperties}
                                   className="w-full h-full flex items-center justify-center"
                                 >
                                   <RegistryComponent />
-                                </div>
+                                </RoundedEdgePreviewWrapper>
                               ) : comp.snippets?.html || comp.snippets?.css ? (
                                 <div className="w-[150%] h-[150%]">
                                   <LivePreviewIframe

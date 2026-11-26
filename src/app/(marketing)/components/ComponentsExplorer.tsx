@@ -9,6 +9,10 @@ import { getPublishedComponents } from "@/lib/admin/components/queries";
 import { componentRegistry } from "@/lib/registry/components";
 import { LivePreviewIframe } from "@/components/admin/preview/LivePreviewIframe";
 import { useCustomization } from "@/components/providers/CustomizationProvider";
+import {
+  RoundedEdgePreviewWrapper,
+  getRoundedEdgePercent,
+} from "@/components/customization/RoundedEdgePreviewWrapper";
 
 function ProgressiveCardPreview({
   isPriority,
@@ -504,12 +508,13 @@ export function ComponentsExplorer({
                 const RegistryComponent = componentRegistry[comp.registry_id]?.component;
                 if (RegistryComponent) {
                   return (
-                    <div
-                      style={activeOverrides as React.CSSProperties}
+                    <RoundedEdgePreviewWrapper
+                      roundedEdge={getRoundedEdgePercent(overrides)}
+                      styleOverrides={activeOverrides as React.CSSProperties}
                       className="w-full flex items-center justify-center"
                     >
                       <RegistryComponent />
-                    </div>
+                    </RoundedEdgePreviewWrapper>
                   );
                 }
 

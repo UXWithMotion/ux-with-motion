@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const TOTAL_STEPS = 5;
+
 export interface StepProgressPlayerProps {
-  /** Total number of steps in the indicator (default: 5, matching Figma design) */
-  totalSteps?: number;
   /** Duration of each step in seconds (default: 3) */
   stepDuration?: number;
   /** Whether auto-play is enabled initially (default: true) */
@@ -85,7 +85,6 @@ function PauseIcon({ className }: { className?: string }) {
 }
 
 export function StepProgressPlayer({
-  totalSteps = 5,
   stepDuration = 3,
   autoPlay = true,
   onStepChange,
@@ -93,70 +92,67 @@ export function StepProgressPlayer({
 }: StepProgressPlayerProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
-  const [progress, setProgress] = useState(0.4); // Start with initial filled preview matching Figma Variant 1
 
-  const animationFrameRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number | null>(null);
+  const stepRef = useRef(0);
+  const progressRef = useRef(0);
+  const activeFillRef = useRef<HTMLDivElement | null>(null);
+  const onStepChangeRef = useRef(onStepChange);
+
+  useEffect(() => {
+    onStepChangeRef.current = onStepChange;
+  }, [onStepChange]);
 
   const durationMs = Math.max(500, stepDuration * 1000);
 
-  // Notify parent on step change
-  const handleStepChange = useCallback(
-    (newStep: number) => {
-      setCurrentStep(newStep);
-      onStepChange?.(newStep);
-    },
-    [onStepChange]
-  );
-
-  // Smooth progress loop via requestAnimationFrame
+  // Sync fill width immediately whenever active step switches
   useEffect(() => {
-    if (!isPlaying) {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      lastTimeRef.current = null;
-      return;
+    if (activeFillRef.current) {
+      activeFillRef.current.style.width = `${Math.min(100, Math.max(0, progressRef.current * 100)).toFixed(2)}%`;
     }
+  }, [currentStep]);
 
-    const stepLoop = (timestamp: number) => {
-      if (!lastTimeRef.current) {
-        lastTimeRef.current = timestamp;
+  // Smooth 60-120fps rAF progress loop without React re-render stutter
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    let rafId = 0;
+    let lastTime = performance.now();
+
+    const tick = (now: number) => {
+      const delta = Math.min(64, Math.max(0, now - lastTime));
+      lastTime = now;
+
+      progressRef.current += delta / durationMs;
+
+      if (progressRef.current >= 1) {
+        progressRef.current = 0;
+        const nextStep = (stepRef.current + 1) % TOTAL_STEPS;
+        stepRef.current = nextStep;
+        setCurrentStep(nextStep);
+        onStepChangeRef.current?.(nextStep);
+      } else if (activeFillRef.current) {
+        activeFillRef.current.style.width = `${(progressRef.current * 100).toFixed(2)}%`;
       }
 
-      const delta = timestamp - lastTimeRef.current;
-      lastTimeRef.current = timestamp;
-
-      setProgress((prevProgress) => {
-        const nextProgress = prevProgress + delta / durationMs;
-        if (nextProgress >= 1) {
-          handleStepChange((currentStep + 1) % totalSteps);
-          return 0;
-        }
-        return nextProgress;
-      });
-
-      animationFrameRef.current = requestAnimationFrame(stepLoop);
+      rafId = requestAnimationFrame(tick);
     };
 
-    animationFrameRef.current = requestAnimationFrame(stepLoop);
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [isPlaying, currentStep, durationMs, totalSteps, handleStepChange]);
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [isPlaying, durationMs]);
 
   const togglePlayPause = () => {
     setIsPlaying((prev) => !prev);
   };
 
   const handleStepClick = (index: number) => {
-    handleStepChange(index);
-    setProgress(0);
-    lastTimeRef.current = null;
+    stepRef.current = index;
+    progressRef.current = 0;
+    setCurrentStep(index);
+    onStepChangeRef.current?.(index);
+    if (activeFillRef.current) {
+      activeFillRef.current.style.width = "0%";
+    }
   };
 
   return (
@@ -165,19 +161,10 @@ export function StepProgressPlayer({
       aria-label="Step progress player"
       className={`inline-flex items-center gap-[8.44px] select-none ${className}`}
     >
-      {/* Step Indicators Capsule Container: 135.11px × 38px, padding 14.78px, rounded 19px, white */}
-      <div
-        className="relative flex items-center justify-center p-[14.78px] bg-white rounded-[19px] shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04]"
-        style={{
-          width: "135.11px",
-          height: "38px",
-        }}
-      >
-        <div
-          className="relative flex items-center gap-[8.44px] h-[8.44px] shrink-0"
-          style={{ width: "105.56px" }}
-        >
-          {Array.from({ length: totalSteps }).map((_, index) => {
+      {/* Step Indicators Capsule Container: p-[14.78px], rounded-[19px], white (exact 135.11px × 38px for 5 steps) */}
+      <div className="relative flex items-center justify-center p-[14.78px] h-[38px] bg-white rounded-[19px] shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04]">
+        <div className="relative flex items-center gap-[8.44px] h-[8.44px] shrink-0">
+          {Array.from({ length: TOTAL_STEPS }).map((_, index) => {
             const isActive = index === currentStep;
             const isCompleted = index < currentStep;
 
@@ -188,28 +175,24 @@ export function StepProgressPlayer({
                 onClick={() => handleStepClick(index)}
                 aria-label={`Go to step ${index + 1}`}
                 aria-current={isActive ? "step" : undefined}
+                initial={false}
                 animate={{
                   width: isActive ? 38 : 8.44,
+                  backgroundColor: isCompleted ? "#17181A" : "#DADADA",
                 }}
                 transition={{
-                  type: "spring",
-                  stiffness: 450,
-                  damping: 32,
-                  mass: 0.8,
+                  width: { type: "spring", stiffness: 280, damping: 28, mass: 0.8 },
+                  backgroundColor: { duration: 0.25, ease: "easeInOut" },
                 }}
-                className="relative h-[8.44px] rounded-full bg-[#DADADA] overflow-hidden cursor-pointer shrink-0 border-none p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#17181A]/30"
+                className="relative h-[8.44px] rounded-full overflow-hidden cursor-pointer shrink-0 border-none p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#17181A]/30"
               >
-                {/* Dark charcoal/black (#17181A) progress fill */}
-                <div
-                  className="absolute top-0 left-0 h-full rounded-full bg-[#17181A] transition-all duration-75"
-                  style={{
-                    width: isActive
-                      ? `${Math.min(100, Math.max(0, progress * 100))}%`
-                      : isCompleted
-                      ? "100%"
-                      : "0%",
-                  }}
-                />
+                {isActive && (
+                  <div
+                    ref={activeFillRef}
+                    className="absolute top-0 left-0 h-full rounded-full bg-[#17181A]"
+                    style={{ width: "0%" }}
+                  />
+                )}
               </motion.button>
             );
           })}
