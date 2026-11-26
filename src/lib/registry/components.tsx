@@ -260,6 +260,11 @@ export const CardSwap = dynamic(
   { loading: SkeletonLoader }
 );
 
+export const CurvedCarousel = dynamic(
+  () => import("@/components/motion-components/cards/CurvedCarousel").then((m) => m.CurvedCarousel),
+  { loading: SkeletonLoader }
+);
+
 export const LiquidNavMenu = dynamic(
   () => import("@/components/motion-components/buttons/LiquidNavMenu").then((m) => m.LiquidNavMenu),
   { loading: SkeletonLoader }
@@ -271,6 +276,18 @@ export const GooeyNav = dynamic(
 );
 
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "curved-carousel": {
+    registryId: "curved-carousel",
+    name: "Curved Carousel",
+    category: "Cards",
+    component: CurvedCarousel,
+    schema_definition: [],
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
   "range-tab-slider": {
     registryId: "range-tab-slider",
     name: "Range Tab Slider",
