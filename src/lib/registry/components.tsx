@@ -255,7 +255,24 @@ export const CardSwap = dynamic(
   { loading: SkeletonLoader }
 );
 
+export const LiquidNavMenu = dynamic(
+  () => import("@/components/motion-components/buttons/LiquidNavMenu").then((m) => m.LiquidNavMenu),
+  { loading: SkeletonLoader }
+);
+
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "liquid-nav-menu": {
+    registryId: "liquid-nav-menu",
+    name: "Liquid Nav Menu",
+    category: "Buttons",
+    component: LiquidNavMenu,
+    schema_definition: [],
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
   "card-swap": {
     registryId: "card-swap",
     name: "Card Swap",
