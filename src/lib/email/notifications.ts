@@ -209,6 +209,19 @@ You are receiving this email because you are a registered user of UX With Motion
 export async function sendComponentNotificationEmail(
   payload: ComponentNotificationPayload
 ): Promise<NotificationResult> {
+  // Paused by default; set ENABLE_COMPONENT_NOTIFICATIONS="true" to resume user emails.
+  if (process.env.ENABLE_COMPONENT_NOTIFICATIONS !== "true") {
+    console.info(
+      `[Email Notification] Paused (${payload.type}): "${payload.title}" (${payload.slug})`
+    );
+    return {
+      success: true,
+      totalRecipients: 0,
+      sentCount: 0,
+      mode: "skipped",
+    };
+  }
+
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.warn("[Email Notification] Skipped: RESEND_API_KEY is not configured.");
