@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useId, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 export type GooeyNavItemId = "home" | "explore" | "about" | "contact";
@@ -295,8 +295,39 @@ export function GooeyNav({
   const [internalActive, setInternalActive] = useState<GooeyNavItemId>(defaultActive);
   const [hoveredId, setHoveredId] = useState<GooeyNavItemId | null>(null);
   const [isPointerInside, setIsPointerInside] = useState(false);
+  const [radiusScale, setRadiusScale] = useState(1);
+  const navRef = useRef<HTMLElement>(null);
   const reactId = useId();
   const filterId = `gooey-nav-filter-${reactId.replace(/:/g, "")}`;
+
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+
+    const readScale = () => {
+      const raw = window.getComputedStyle(el).getPropertyValue("--uxm-radius-scale").trim();
+      if (!raw) {
+        setRadiusScale(1);
+        return;
+      }
+      const parsed = Number(raw);
+      if (!Number.isNaN(parsed)) {
+        setRadiusScale(Math.min(1, Math.max(0, parsed)));
+      }
+    };
+
+    readScale();
+
+    const parent = el.parentElement;
+    if (!parent || typeof MutationObserver === "undefined") return;
+
+    const observer = new MutationObserver(readScale);
+    observer.observe(parent, {
+      attributes: true,
+      attributeFilter: ["style"],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   const currentActive = activeId !== undefined ? activeId : internalActive;
   const activeIndex = Math.max(
@@ -305,6 +336,12 @@ export function GooeyNav({
   );
   const activeItem = NAV_ITEMS[activeIndex];
   const activeCenterX = START_X + activeIndex * STEP_X;
+  const wellRadius = Number((30.5 * radiusScale).toFixed(2));
+  const trailRadius = Number((34 * radiusScale).toFixed(2));
+  const haloRadius = Number((40.5 * radiusScale).toFixed(2));
+  const bridgeRadius = Number((9 * radiusScale).toFixed(2));
+  const blurStdDev = Number((7.5 * (0.12 + 0.88 * radiusScale)).toFixed(2));
+  const useGooeyFilter = radiusScale > 0.02;
 
   useEffect(() => {
     if (!autoPlay || activeId !== undefined || isPointerInside) return;
@@ -330,6 +367,7 @@ export function GooeyNav({
 
   return (
     <nav
+      ref={navRef}
       aria-label="Gooey navigation bar"
       onMouseEnter={() => {
         setIsPointerInside(true);
@@ -372,7 +410,7 @@ export function GooeyNav({
               height="170%"
               colorInterpolationFilters="sRGB"
             >
-              <feGaussianBlur in="SourceGraphic" stdDeviation="7.5" result="blur" />
+              <feGaussianBlur in="SourceGraphic" stdDeviation={blurStdDev} result="blur" />
               <feColorMatrix
                 in="blur"
                 mode="matrix"
@@ -383,27 +421,31 @@ export function GooeyNav({
           </defs>
 
           <g style={{ filter: "drop-shadow(0 1px 4px rgba(0, 0, 0, 0.055))" }}>
-            <g filter={`url(#${filterId})`}>
+            <g filter={useGooeyFilter ? `url(#${filterId})` : undefined}>
               {/* Continuous soft metaball bridge connecting the 4 circular wells */}
               <rect
                 x={START_X}
                 y={CENTER_Y - 9}
                 width={STEP_X * (NAV_ITEMS.length - 1)}
                 height={18}
-                rx={9}
+                rx={bridgeRadius}
+                ry={bridgeRadius}
                 fill="#E6E9EC"
               />
 
-              {/* Four base circular wells with subtle magnetic swell on hover */}
+              {/* Four base wells with subtle magnetic swell on hover */}
               {NAV_ITEMS.map((item, idx) => {
                 const isItemHovered = hoveredId === item.id;
                 const cx = START_X + idx * STEP_X;
                 return (
                   <g key={item.id} transform={`translate(${cx}, ${CENTER_Y})`}>
-                    <motion.circle
-                      cx={0}
-                      cy={0}
-                      r={30.5}
+                    <motion.rect
+                      x={-30.5}
+                      y={-30.5}
+                      width={61}
+                      height={61}
+                      rx={wellRadius}
+                      ry={wellRadius}
                       fill="#E6E9EC"
                       initial={false}
                       animate={{
@@ -415,13 +457,21 @@ export function GooeyNav({
                 );
               })}
 
-              {/* Trailing liquid tail blob creating the elastic morph bridge */}
+              {/* Trailing liquid tail creating the elastic morph bridge */}
               <motion.g
                 initial={false}
                 animate={{ x: activeCenterX }}
                 transition={TRAIL_SPRING}
               >
-                <circle cx={0} cy={CENTER_Y} r={34} fill="#E6E9EC" />
+                <rect
+                  x={-34}
+                  y={CENTER_Y - 34}
+                  width={68}
+                  height={68}
+                  rx={trailRadius}
+                  ry={trailRadius}
+                  fill="#E6E9EC"
+                />
               </motion.g>
 
               {/* Active outer bulging metaball halo */}
@@ -431,10 +481,13 @@ export function GooeyNav({
                 transition={LEAD_SPRING}
               >
                 <g transform={`translate(0, ${CENTER_Y})`}>
-                  <motion.circle
-                    cx={0}
-                    cy={0}
-                    r={40.5}
+                  <motion.rect
+                    x={-40.5}
+                    y={-40.5}
+                    width={81}
+                    height={81}
+                    rx={haloRadius}
+                    ry={haloRadius}
                     fill="#E6E9EC"
                     animate={{ scale: [1, 1.03, 1] }}
                     transition={{
