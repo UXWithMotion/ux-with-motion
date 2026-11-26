@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
         destination: "/login",
         permanent: false,
       },
+      {
+        source: "/components/liquid-nav-menu",
+        destination: "/components/sidebar",
+        permanent: true,
+      },
     ];
   },
 };

@@ -126,7 +126,7 @@ const BUTTON_SLUGS = new Set([
   "services-indicator-button",
   "slide-to-confirm",
   "step-progress-player",
-  "liquid-nav-menu",
+  "sidebar",
   "stepper-button",
   "swipe-arrow-button",
   "text-swipe-button",

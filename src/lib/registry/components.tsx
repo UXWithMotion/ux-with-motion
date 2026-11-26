@@ -261,9 +261,9 @@ export const LiquidNavMenu = dynamic(
 );
 
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
-  "liquid-nav-menu": {
-    registryId: "liquid-nav-menu",
-    name: "Liquid Nav Menu",
+  "sidebar": {
+    registryId: "sidebar",
+    name: "Sidebar",
     category: "Buttons",
     component: LiquidNavMenu,
     schema_definition: [],
