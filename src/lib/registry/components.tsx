@@ -260,7 +260,24 @@ export const LiquidNavMenu = dynamic(
   { loading: SkeletonLoader }
 );
 
+export const GooeyNav = dynamic(
+  () => import("@/components/motion-components/buttons/GooeyNav").then((m) => m.GooeyNav),
+  { loading: SkeletonLoader }
+);
+
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "gooey-nav": {
+    registryId: "gooey-nav",
+    name: "Gooey Nav",
+    category: "Tabs",
+    component: GooeyNav,
+    schema_definition: [],
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
   "sidebar": {
     registryId: "sidebar",
     name: "Sidebar",

@@ -96,6 +96,7 @@ const INPUT_SLUGS = new Set([
 ]);
 
 const TAB_SLUGS = new Set([
+  "gooey-nav",
   "four-item-tabs",
   "tabs-button",
 ]);
