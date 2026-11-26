@@ -233,3 +233,70 @@ input:-webkit-autofill:active {
   font-family: var(--font-ui);
 }
 
+/* ══ Card swap ════════════════════════════════════════════
+   lab/CardSwap.tsx. A stack in depth; each card's slot arrives as
+   --t. Cards are the slab, a title row and a photo with a concentric
+   corner. No shadows: depth is the stack and a hairline edge */
+.csw {
+  /* Scoped Bencho design token mappings using this project's existing tokens */
+  --fill-on: var(--color-platinum-01, #1F2123);
+  --fill-slab: var(--color-platinum-13, #FFFFFF);
+  --t: translate3d(0px, 0px, 0px);
+
+  position: relative;
+  font-family: var(--font-sans, var(--font-plus-jakarta), sans-serif);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.csw-stage {
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  margin-left: -98px;
+  /* flat, so paint order is the z-index: a card sent back goes behind
+     at once. Centered perspective origin keeps the vertical stack symmetrical */
+  perspective: 1000px;
+  perspective-origin: 50% 50%;
+}
+
+/* a card is a photo in a thin slab frame, its corner concentric
+   with the photo's, and a solid label pill in the corner */
+.csw-card {
+  position: absolute;
+  inset: 0;
+  padding: 3px;
+  border-radius: 20px;
+  background: var(--fill-slab, #fff);
+  color: var(--fill-on, #17181a);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--fill-on, #17181a) 12%, transparent);
+  transform: var(--t);
+  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  backface-visibility: hidden;
+}
+
+.csw-card[data-front] { cursor: grab; touch-action: none; }
+
+.csw-card[data-front]:active { cursor: grabbing; }
+
+.csw-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 17px;
+  pointer-events: none;
+}
+
+.csw-tag {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--fill-slab, #fff);
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+}
+

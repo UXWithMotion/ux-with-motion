@@ -250,7 +250,76 @@ export const StepProgressPlayer = dynamic(
   { loading: SkeletonLoader }
 );
 
+export const CardSwap = dynamic(
+  () => import("@/components/motion-components/cards/CardSwap").then((m) => m.CardSwap),
+  { loading: SkeletonLoader }
+);
+
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "card-swap": {
+    registryId: "card-swap",
+    name: "Card Swap",
+    category: "Cards",
+    component: CardSwap,
+    schema_definition: [
+      {
+        variable: "auto",
+        label: "Auto Swap",
+        type: "boolean",
+        defaultValue: "false",
+      },
+      {
+        variable: "every",
+        label: "Interval (seconds)",
+        type: "number",
+        defaultValue: "4",
+      },
+    ],
+    controls: [
+      {
+        name: "auto",
+        label: "Auto Swap",
+        type: "boolean",
+        defaultValue: false,
+        description: "Automatically cycles the front card to the back on an interval when pointer is away.",
+      },
+    ],
+    docs: {
+      overview: "A 3D stacked deck of photo cards arranged in perspective depth. Pressing, dragging, or flinging the front card sends it directly behind the stack while the remaining cards smoothly step forward.",
+      useCases: [
+        "Interactive photo galleries and media showcases",
+        "Featured collection decks on landing pages",
+        "Tactile story or highlight previews",
+      ],
+      dependencies: [],
+      setupInstructions: "No third-party dependencies required beyond React. Copy CardSwap.tsx and the .csw styles from globals.css.",
+      usageExample: `<CardSwap auto={false} every={4} />`,
+      supportedProps: [
+        {
+          prop: "auto",
+          type: "boolean",
+          defaultVal: "false",
+          description: "Automatically cycles cards every few seconds, pausing while hovered or dragged.",
+        },
+        {
+          prop: "every",
+          type: "number",
+          defaultVal: "4",
+          description: "Seconds between automatic card swaps when auto is enabled (minimum 1.5s).",
+        },
+      ],
+      accessibilityNotes: "Supports direct pointer press, drag with rubber-banding, and velocity-based fling gestures.",
+      relatedComponents: [
+        { slug: "image-compare", name: "Image Compare" },
+        { slug: "pdf-action-card", name: "PDF Action Card" },
+      ],
+    },
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
   "step-progress-player": {
     registryId: "step-progress-player",
     name: "Step Progress Player",
