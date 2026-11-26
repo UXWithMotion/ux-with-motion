@@ -37,32 +37,68 @@ export function CopyToFigmaButton({
 }: CopyToFigmaButtonProps) {
   const [copied, setCopied] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [availability, setAvailability] = useState<{ slug: string; available: boolean } | null>(null);
+  const cachedSlugRef = useRef<string | null>(null);
   const cachedHtmlRef = useRef<string | null>(null);
+
+  const isAvailable = availability?.slug === slug ? availability.available : null;
 
   // Prefetch clipboard payload on mount or hover
   const prefetchPayload = async (): Promise<string | null> => {
-    if (cachedHtmlRef.current) return cachedHtmlRef.current;
+    if (cachedSlugRef.current === slug && cachedHtmlRef.current) {
+      setAvailability({ slug, available: true });
+      return cachedHtmlRef.current;
+    }
     try {
       const res = await fetch(`/api/components/${slug}/figma`);
       if (res.ok) {
         const html = await res.text();
-        if (html && html.includes("data-buffer")) {
+        if (html && (html.includes("data-buffer") || html.includes("<!--(figma)"))) {
+          cachedSlugRef.current = slug;
           cachedHtmlRef.current = html;
-          setIsAvailable(true);
+          setAvailability({ slug, available: true });
           return html;
         }
       }
-      setIsAvailable(false);
+      cachedSlugRef.current = slug;
+      cachedHtmlRef.current = null;
+      setAvailability({ slug, available: false });
       return null;
     } catch {
-      setIsAvailable(false);
+      setAvailability({ slug, available: false });
       return null;
     }
   };
 
   useEffect(() => {
-    prefetchPayload();
+    let active = true;
+    fetch(`/api/components/${slug}/figma`)
+      .then(async (res) => {
+        if (!active) return;
+        if (res.ok) {
+          const html = await res.text();
+          if (active && html && (html.includes("data-buffer") || html.includes("<!--(figma)"))) {
+            cachedSlugRef.current = slug;
+            cachedHtmlRef.current = html;
+            setAvailability({ slug, available: true });
+            return;
+          }
+        }
+        if (active) {
+          cachedSlugRef.current = slug;
+          cachedHtmlRef.current = null;
+          setAvailability({ slug, available: false });
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setAvailability({ slug, available: false });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [slug]);
 
   const handleCopyToFigma = async (e: React.MouseEvent) => {
