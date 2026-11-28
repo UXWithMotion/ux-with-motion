@@ -45,6 +45,11 @@ export const RangeTabSlider = dynamic(
   { loading: SkeletonLoader }
 );
 
+export const AIComposer = dynamic(
+  () => import("@/components/motion-components/inputs/AiComposer").then((m) => m.AIComposer),
+  { loading: SkeletonLoader }
+);
+
 export const SmoothCardInput = dynamic(
   () => import("@/components/motion-components/inputs/SmoothCardInput").then((m) => m.SmoothCardInput),
   { loading: SkeletonLoader }
@@ -276,6 +281,18 @@ export const GooeyNav = dynamic(
 );
 
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "ai-composer": {
+    registryId: "ai-composer",
+    name: "AI Composer",
+    category: "Inputs",
+    component: AIComposer,
+    schema_definition: [],
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
   "curved-carousel": {
     registryId: "curved-carousel",
     name: "Curved Carousel",
