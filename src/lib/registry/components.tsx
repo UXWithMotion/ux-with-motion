@@ -310,12 +310,6 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
         type: "number",
         defaultValue: "20",
       },
-      {
-        variable: "morph",
-        label: "Morph Speed",
-        type: "number",
-        defaultValue: "50",
-      },
     ],
     snippets: {
       html: "",

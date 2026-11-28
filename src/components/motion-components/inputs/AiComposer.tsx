@@ -16,6 +16,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   AnimatePresence,
   MotionConfig,
@@ -121,6 +122,8 @@ export function AIComposer({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const modelMenuRef = useRef<HTMLDivElement | null>(null);
+  const modelButtonRef = useRef<HTMLButtonElement | null>(null);
+  const menuListRef = useRef<HTMLUListElement | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -137,6 +140,12 @@ export function AIComposer({
   const [prompt, setPrompt] = useState(0);
   const [model, setModel] = useState(models[0]?.name ?? "GPT-5 mini");
   const [menu, setMenu] = useState(false);
+  const [menuPos, setMenuPos] = useState<{
+    top?: number;
+    bottom?: number;
+    right: number;
+    placeAbove: boolean;
+  } | null>(null);
   const [sent, setSent] = useState<{ id: number; text: string } | null>(null);
 
   const hasText = text.trim().length > 0;
@@ -189,17 +198,45 @@ export function AIComposer({
 
   useEffect(() => cleanupVoiceResources, [cleanupVoiceResources]);
 
-  // Close model popover on outside click
+  const updateMenuPosition = useCallback(() => {
+    const rect = modelButtonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const estHeight = Math.min(models.length * 56 + 16, 280);
+    const placeAbove = rect.top >= estHeight + 16;
+    const right = Math.max(
+      12,
+      Math.min(window.innerWidth - rect.right, window.innerWidth - 248)
+    );
+    setMenuPos(
+      placeAbove
+        ? { bottom: window.innerHeight - rect.top + 10, right, placeAbove: true }
+        : { top: rect.bottom + 10, right, placeAbove: false }
+    );
+  }, [models.length]);
+
+  // Keep portaled model popover anchored & close on outside click
   useEffect(() => {
     if (!menu) return;
+    const raf = window.requestAnimationFrame(updateMenuPosition);
     const onPointerDown = (e: PointerEvent) => {
-      if (!modelMenuRef.current?.contains(e.target as Node | null)) {
+      const target = e.target as Node | null;
+      if (
+        !modelMenuRef.current?.contains(target) &&
+        !menuListRef.current?.contains(target)
+      ) {
         setMenu(false);
       }
     };
     window.addEventListener("pointerdown", onPointerDown);
-    return () => window.removeEventListener("pointerdown", onPointerDown);
-  }, [menu]);
+    window.addEventListener("scroll", updateMenuPosition, true);
+    window.addEventListener("resize", updateMenuPosition);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+      window.removeEventListener("resize", updateMenuPosition);
+    };
+  }, [menu, updateMenuPosition]);
 
   // Free object URLs on unmount
   const urls = useRef<Set<string>>(new Set());
@@ -633,9 +670,13 @@ export function AIComposer({
                     {/* Model Selector Pill */}
                     <div ref={modelMenuRef} className="relative min-w-0 shrink">
                       <button
+                        ref={modelButtonRef}
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (!menu) {
+                            updateMenuPosition();
+                          }
                           setMenu((m) => !m);
                         }}
                         aria-haspopup="listbox"
@@ -659,75 +700,92 @@ export function AIComposer({
                         </motion.span>
                       </button>
 
-                      <AnimatePresence>
-                        {menu && (
-                          <motion.ul
-                            role="listbox"
-                            aria-label="Model"
-                            initial={{
-                              opacity: 0,
-                              y: 8,
-                              scale: 0.96,
-                              filter: "blur(6px)",
-                            }}
-                            animate={{
-                              opacity: 1,
-                              y: 0,
-                              scale: 1,
-                              filter: "blur(0px)",
-                            }}
-                            exit={{
-                              opacity: 0,
-                              y: 8,
-                              scale: 0.96,
-                              filter: "blur(6px)",
-                            }}
-                            transition={{
-                              type: "spring",
-                              stiffness: 520,
-                              damping: 34,
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="absolute right-0 bottom-full z-30 mb-2.5 w-[236px] origin-bottom-right rounded-[14px] border border-[#d8dee9] bg-white p-1.5 shadow-[0_16px_36px_-12px_rgba(0,0,0,0.18)]"
-                          >
-                            {models.map((m, i) => (
-                              <motion.li
-                                key={m.name}
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.03 * i }}
+                      {typeof document !== "undefined" &&
+                        createPortal(
+                          <AnimatePresence>
+                            {menu && menuPos && (
+                              <motion.ul
+                                ref={menuListRef}
+                                role="listbox"
+                                aria-label="Model"
+                                initial={{
+                                  opacity: 0,
+                                  y: menuPos.placeAbove ? 8 : -8,
+                                  scale: 0.96,
+                                  filter: "blur(6px)",
+                                }}
+                                animate={{
+                                  opacity: 1,
+                                  y: 0,
+                                  scale: 1,
+                                  filter: "blur(0px)",
+                                }}
+                                exit={{
+                                  opacity: 0,
+                                  y: menuPos.placeAbove ? 8 : -8,
+                                  scale: 0.96,
+                                  filter: "blur(6px)",
+                                }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 520,
+                                  damping: 34,
+                                }}
+                                style={{
+                                  position: "fixed",
+                                  top: menuPos.top,
+                                  bottom: menuPos.bottom,
+                                  right: menuPos.right,
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                onPointerDown={(e) => e.stopPropagation()}
+                                className={cn(
+                                  "z-[200] w-[236px] rounded-[14px] border border-[#d8dee9] bg-white p-1.5 font-['Plus_Jakarta_Sans',sans-serif] shadow-[0_16px_36px_-12px_rgba(0,0,0,0.18)]",
+                                  menuPos.placeAbove
+                                    ? "origin-bottom-right"
+                                    : "origin-top-right"
+                                )}
                               >
-                                <button
-                                  type="button"
-                                  role="option"
-                                  aria-selected={m.name === model}
-                                  onClick={() => {
-                                    setModel(m.name);
-                                    setMenu(false);
-                                    inputRef.current?.focus();
-                                  }}
-                                  className="flex w-full cursor-pointer items-center gap-3 rounded-[8px] px-2.5 py-2 text-left transition-colors hover:bg-[#f1f3f6] focus-visible:bg-[#f1f3f6] focus-visible:outline-none"
-                                >
-                                  <span className="min-w-0 flex-1">
-                                    <span className="block text-[13px] font-medium text-[#1f2123]">
-                                      {m.name}
-                                    </span>
-                                    <span className="block text-[11px] text-[#62646a]">
-                                      {m.note}
-                                    </span>
-                                  </span>
-                                  {m.name === model && (
-                                    <Check
-                                      className="size-4 shrink-0 text-[#111]"
-                                      strokeWidth={2.4}
-                                    />
-                                  )}
-                                </button>
-                              </motion.li>
-                            ))}
-                          </motion.ul>
+                                {models.map((m, i) => (
+                                  <motion.li
+                                    key={m.name}
+                                    initial={{ opacity: 0, y: 5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.03 * i }}
+                                  >
+                                    <button
+                                      type="button"
+                                      role="option"
+                                      aria-selected={m.name === model}
+                                      onClick={() => {
+                                        setModel(m.name);
+                                        setMenu(false);
+                                        inputRef.current?.focus();
+                                      }}
+                                      className="flex w-full cursor-pointer items-center gap-3 rounded-[8px] px-2.5 py-2 text-left transition-colors hover:bg-[#f1f3f6] focus-visible:bg-[#f1f3f6] focus-visible:outline-none"
+                                    >
+                                      <span className="min-w-0 flex-1">
+                                        <span className="block text-[13px] font-medium text-[#1f2123]">
+                                          {m.name}
+                                        </span>
+                                        <span className="block text-[11px] text-[#62646a]">
+                                          {m.note}
+                                        </span>
+                                      </span>
+                                      {m.name === model && (
+                                        <Check
+                                          className="size-4 shrink-0 text-[#111]"
+                                          strokeWidth={2.4}
+                                        />
+                                      )}
+                                    </button>
+                                  </motion.li>
+                                ))}
+                              </motion.ul>
+                            )}
+                          </AnimatePresence>,
+                          document.body
                         )}
-                      </AnimatePresence>
                     </div>
 
                     {/* Voice input button (36px, 8px radius) */}
