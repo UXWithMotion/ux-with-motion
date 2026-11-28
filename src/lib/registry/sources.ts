@@ -48,6 +48,7 @@ export const officialComponentFiles: Record<string, string> = {
   "range-tab-slider": "src/components/motion-components/inputs/RangeTabSlider.tsx",
   "ai-composer": "src/components/motion-components/inputs/AiComposer.tsx",
   "pdf-action-card": "src/components/motion-components/cards/PdfActionCard.tsx",
+  "aspect-ratio": "src/components/motion-components/cards/AspectRatio.tsx",
   "card-swap": "src/components/motion-components/cards/CardSwap.tsx",
   "curved-carousel": "src/components/motion-components/cards/CurvedCarousel.tsx",
   "smooth-input": "src/components/motion-components/inputs/SmoothInput.tsx",

@@ -265,6 +265,11 @@ export const CardSwap = dynamic(
   { loading: SkeletonLoader }
 );
 
+export const AspectRatio = dynamic(
+  () => import("@/components/motion-components/cards/AspectRatio").then((m) => m.AspectRatio),
+  { loading: SkeletonLoader }
+);
+
 export const CurvedCarousel = dynamic(
   () => import("@/components/motion-components/cards/CurvedCarousel").then((m) => m.CurvedCarousel),
   { loading: SkeletonLoader }
@@ -287,6 +292,31 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     category: "Inputs",
     component: AIComposer,
     schema_definition: [],
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
+  "aspect-ratio": {
+    registryId: "aspect-ratio",
+    name: "Aspect Ratio",
+    category: "Cards",
+    component: AspectRatio,
+    schema_definition: [
+      {
+        variable: "corner",
+        label: "Corner Radius",
+        type: "number",
+        defaultValue: "20",
+      },
+      {
+        variable: "morph",
+        label: "Morph Speed",
+        type: "number",
+        defaultValue: "50",
+      },
+    ],
     snippets: {
       html: "",
       css: "",

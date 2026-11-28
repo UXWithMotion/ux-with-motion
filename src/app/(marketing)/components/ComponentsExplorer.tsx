@@ -104,6 +104,7 @@ const TAB_SLUGS = new Set([
 ]);
 
 const CARD_SLUGS = new Set([
+  "aspect-ratio",
   "curved-carousel",
   "card-swap",
   "image-compare",

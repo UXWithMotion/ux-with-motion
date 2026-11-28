@@ -300,3 +300,285 @@ input:-webkit-autofill:active {
   pointer-events: none;
 }
 
+/* No stroke rule here on purpose — see the note on the
+   catalog entry. `--pane-edge` is 8% ink, which reads against
+   a pane and disappears against a photograph, so the block
+   does not offer the switch rather than offering one that
+   reports a state it is not producing. */
+
+/* ══ Aspect ═════════════════════════════════════════════════
+   A picture and three shapes to put it in. Almost everything
+   that moves is written in the markup from the chosen shape;
+   what is here is the transition itself and the chrome. */
+.asp {
+  /* Scoped Bencho design token mappings using this project's existing tokens */
+  --card: var(--color-platinum-13, #FFFFFF);
+  --font-ui: var(--font-sans, var(--font-plus-jakarta), sans-serif);
+  --ink: var(--color-platinum-01, #1F2123);
+  --ink-3: var(--color-platinum-02, #626467);
+  --ink-rgb: 31, 33, 35;
+  --surface-2: var(--color-platinum-10, #EEF1F4);
+  --wash: 0.06;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-ui);
+}
+
+/* the full square, and it never changes size — the picture is
+   centred in a box that is not moving, so the tabs below do
+   not climb and drop as the shape changes */
+.asp-stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+
+.asp-pic {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--surface-2);
+  /* `cover` and a frame that moves: the picture stays
+     undistorted and the CROP changes, which is what a format
+     switch actually is. Contain would letterbox and fit would
+     squash. */
+  transition:
+    width var(--asp-ms, 600ms) cubic-bezier(0.22, 1, 0.36, 1),
+    height var(--asp-ms, 600ms) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.asp-media {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1);
+  filter: blur(0px) brightness(1);
+}
+
+.asp-media[data-generating="true"] {
+  animation: asp-resolve var(--asp-gen-ms, 3500ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes asp-resolve {
+  0% {
+    filter: blur(0px) brightness(1);
+    transform: scale(1);
+  }
+  12% {
+    filter: blur(16px) brightness(0.95);
+    transform: scale(1.04);
+  }
+  74% {
+    filter: blur(12px) brightness(0.97);
+    transform: scale(1.028);
+  }
+  100% {
+    filter: blur(0px) brightness(1);
+    transform: scale(1);
+  }
+}
+
+.asp-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    112deg,
+    transparent 26%,
+    rgba(255, 255, 255, 0.24) 50%,
+    transparent 74%
+  );
+  animation: asp-sheen calc(var(--asp-gen-ms, 3500ms) / 2) cubic-bezier(0.22, 1, 0.36, 1) 2 forwards;
+}
+
+@keyframes asp-sheen {
+  0% {
+    transform: translateX(-115%);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(115%);
+    opacity: 0;
+  }
+}
+
+.asp-sphere {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: 84px;
+  height: 84px;
+  pointer-events: none;
+}
+
+/* ── the aspect ratio trigger & floating glass menu ──────── */
+.asp-picker {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.asp-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px 0 11px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(var(--ink-rgb), var(--wash));
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    scale 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.asp-trigger:hover {
+  background: rgba(var(--ink-rgb), 0.1);
+}
+
+.asp-trigger:active {
+  scale: 0.97;
+}
+
+.asp-trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 4px rgba(var(--ink-rgb), 0.35);
+}
+
+.asp-trigger-name {
+  color: var(--ink);
+  line-height: 1;
+}
+
+.asp-trigger-ratio {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.asp-trigger-caret {
+  color: var(--ink-3);
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.asp-trigger[aria-expanded="true"] .asp-trigger-caret {
+  transform: rotate(180deg);
+}
+
+/* Light frosted glass popover menu with 5 equal-area ratios */
+.asp-menu {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 224px;
+  padding: 6px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(var(--ink-rgb), 0.08),
+    0 18px 40px -12px rgba(var(--ink-rgb), 0.16);
+  transform-origin: bottom center;
+  animation: asp-menu-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.asp-menu[hidden] {
+  display: none;
+}
+
+@keyframes asp-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.asp-opt {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  height: 38px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(var(--ink-rgb), 0.78);
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    scale 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.asp-opt:hover,
+.asp-opt[aria-checked="true"] {
+  background: rgba(var(--ink-rgb), var(--wash));
+  color: var(--ink);
+}
+
+.asp-opt:active {
+  scale: 0.985;
+}
+
+.asp-opt:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 4px rgba(var(--ink-rgb), 0.3);
+}
+
+.asp-opt-name {
+  line-height: 1;
+}
+
+.asp-opt-ratio {
+  color: var(--ink-3);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.asp-opt[aria-checked="true"] .asp-opt-ratio {
+  color: rgba(var(--ink-rgb), 0.76);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .asp-pic,
+  .asp-media,
+  .asp-sheen,
+  .asp-trigger,
+  .asp-trigger-caret,
+  .asp-menu,
+  .asp-opt {
+    transition-duration: 160ms;
+    animation: none;
+  }
+}
+
