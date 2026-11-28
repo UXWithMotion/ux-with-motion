@@ -285,7 +285,31 @@ export const GooeyNav = dynamic(
   { loading: SkeletonLoader }
 );
 
+export const CreateMenu = dynamic(
+  () => import("@/components/motion-components/buttons/CreateMenu").then((m) => m.CreateMenu),
+  { loading: SkeletonLoader }
+);
+
 export const componentRegistry: Record<string, ComponentRegistryEntry> = {
+  "create-menu": {
+    registryId: "create-menu",
+    name: "Create Menu",
+    category: "Buttons",
+    component: CreateMenu,
+    schema_definition: [
+      {
+        variable: "corner",
+        label: "Corner Radius",
+        type: "number",
+        defaultValue: "20",
+      },
+    ],
+    snippets: {
+      html: "",
+      css: "",
+      react: "",
+    },
+  },
   "ai-composer": {
     registryId: "ai-composer",
     name: "AI Composer",

@@ -116,6 +116,7 @@ const CARD_SLUGS = new Set([
 ]);
 
 const BUTTON_SLUGS = new Set([
+  "create-menu",
   "accept-button",
   "send-button",
   "delete-button",
